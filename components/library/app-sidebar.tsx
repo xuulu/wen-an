@@ -72,6 +72,12 @@ export function AppSidebar({
   function handleSelect(id: string) {
     onSelect(id);
     setOpenMobile(false);
+    // 走客户端路由（SPA，不刷新整页）；收藏是用户私有视图，不产生公开 URL
+    if (id === "all") {
+      router.push("/");
+    } else if (id !== "favorites") {
+      router.push(`/category/${id}`);
+    }
   }
 
   function handleUserClick() {

@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
+
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { LoginForm } from "@/components/admin/login-form";
 
-export const metadata = { title: "登录 - 简心文案库管理后台" };
+export const metadata: Metadata = {
+  title: "登录 - 简心文案库管理后台",
+  robots: { index: false, follow: false },
+};
 
 export default function AdminLoginPage() {
   return (

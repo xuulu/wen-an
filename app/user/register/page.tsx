@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
+
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { UserAuthForm } from "@/components/user/user-auth-form";
 
-export const metadata = { title: "注册 - 简心文案库" };
+export const metadata: Metadata = {
+  title: "注册 - 简心文案库",
+  robots: { index: false, follow: false },
+};
 
 export default function UserRegisterPage() {
   return (

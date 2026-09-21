@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -5,7 +6,10 @@ import { ArrowLeft } from "lucide-react";
 import { LogoutButton } from "@/components/admin/logout-button";
 import { getAdminUser } from "@/lib/auth";
 
-export const metadata = { title: "简心文案库管理后台" };
+export const metadata: Metadata = {
+  title: "简心文案库管理后台",
+  robots: { index: false, follow: false },
+};
 
 export default async function AdminPanelLayout({
   children,

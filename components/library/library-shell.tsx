@@ -30,6 +30,8 @@ interface LibraryShellProps {
   hotItems: TopFavoritedItem[];
   /** 服务端每次请求生成的随机种子（F5 重新请求即换种子） */
   seed: number;
+  /** 进入时默认选中的分类（/category/[id] 页传入；首页为 all） */
+  initialCategoryId?: string;
   /** 页脚（服务端组件，由页面传入） */
   footer?: React.ReactNode;
 }
@@ -107,10 +109,14 @@ export function LibraryShell({
   userNickname,
   hotItems,
   seed,
+  initialCategoryId = "all",
   footer,
 }: LibraryShellProps) {
   const router = useRouter();
-  const [activeId, setActiveId] = useState("all");
+  const [activeId, setActiveId] = useState(initialCategoryId);
+  // 路由标识：客户端 Link 在分类页之间跳转时组件实例不会重建，
+  // 通过 render 阶段比对把外部 prop 变化同步进 state（不用 effect，避免 setState-in-effect）
+  const [routeCategory, setRouteCategory] = useState(initialCategoryId);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [newSheetOpen, setNewSheetOpen] = useState(false);
@@ -120,6 +126,13 @@ export function LibraryShell({
   const [hotFilterId, setHotFilterId] = useState<string | null>(null);
   // 本地文案列表：投稿新建后立即插入，实时刷新，不必等整页重载
   const [localItems, setLocalItems] = useState<CopyItem[]>(items);
+
+  if (routeCategory !== initialCategoryId) {
+    setRouteCategory(initialCategoryId);
+    setActiveId(initialCategoryId);
+    setHotFilterId(null);
+    setPage(1);
+  }
 
   const categoryMap = useMemo(
     () => new Map(categories.map((category) => [category.id, category])),
@@ -139,8 +152,15 @@ export function LibraryShell({
 
   const visibleItems = useMemo(() => {
     const keyword = query.trim().toLowerCase();
+    const matchesKeyword = (item: CopyItem) =>
+      !keyword ||
+      item.title.toLowerCase().includes(keyword) ||
+      item.content.toLowerCase().includes(keyword) ||
+      item.tags.some((tag) => tag.toLowerCase().includes(keyword));
+
     return localItems.filter((item) => {
-      if (hotFilterId && item.id !== hotFilterId) return false;
+      // 热门过滤是显式的单条定位，优先于分类/收藏限制
+      if (hotFilterId) return item.id === hotFilterId && matchesKeyword(item);
       if (activeId === "favorites" && !favoriteIds.has(item.id)) return false;
       if (
         activeId !== "all" &&
@@ -148,12 +168,7 @@ export function LibraryShell({
         item.categoryId !== activeId
       )
         return false;
-      if (!keyword) return true;
-      return (
-        item.title.toLowerCase().includes(keyword) ||
-        item.content.toLowerCase().includes(keyword) ||
-        item.tags.some((tag) => tag.toLowerCase().includes(keyword))
-      );
+      return matchesKeyword(item);
     });
   }, [activeId, favoriteIds, hotFilterId, localItems, query]);
 
@@ -180,6 +195,8 @@ export function LibraryShell({
 
   function handleSelectCategory(id: string) {
     setActiveId(id);
+    // 切分类必须退出热门单条过滤，否则新分类（含当前分类再次点击）列表为空、搜索失效
+    setHotFilterId(null);
     setPage(1);
   }
 
@@ -206,8 +223,14 @@ export function LibraryShell({
     );
     setHotFilterId(null);
     setQuery("");
-    setActiveId("all");
     setPage(1);
+    // 在分类页投稿后回到首页，避免 URL 与「全部」视图不一致
+    if (initialCategoryId !== "all") {
+      setActiveId("all");
+      router.push("/");
+    } else {
+      setActiveId("all");
+    }
   }
 
   async function toggleFavorite(id: string) {
@@ -276,6 +299,7 @@ export function LibraryShell({
                 value={query}
                 onChange={(event) => {
                   setQuery(event.target.value);
+                  setHotFilterId(null);
                   setPage(1);
                 }}
                 placeholder="搜索标题、内容或标签…"

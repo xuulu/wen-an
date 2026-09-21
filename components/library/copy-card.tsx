@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Copy, Star } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -88,7 +89,12 @@ export function CopyCard({
 
       {/* 标题 */}
       <h3 className="mt-3 line-clamp-2 text-[15px] leading-snug font-semibold tracking-tight">
-        {item.title}
+        <Link
+          href={`/copy/${item.id}`}
+          className="rounded-sm outline-none transition-colors hover:text-foreground/70 focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {item.title}
+        </Link>
       </h3>
 
       {/* 正文 */}
