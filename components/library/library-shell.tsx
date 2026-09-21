@@ -299,7 +299,7 @@ export function LibraryShell({
               <PenLine />
             </Button>
           </header>
-          <main className="flex-1 p-3 sm:p-4 lg:p-6">
+          <main className="relative flex-1 p-3 [background-image:radial-gradient(55%_38%_at_50%_-8%,oklch(0.68_0.16_245/0.10),transparent_70%)] sm:p-4 lg:p-6">
             <div className="mx-auto flex max-w-7xl flex-col gap-4">
               <DailyRecommend
                 items={localItems}
@@ -313,11 +313,11 @@ export function LibraryShell({
 
               <div className="flex items-center justify-between gap-3">
                 <div className="flex flex-col gap-1">
-                  <h1 className="font-heading text-xl font-semibold">
+                  <h1 className="font-heading text-2xl font-semibold tracking-tight">
                     {activeLabel}
                   </h1>
-                  <p className="text-sm text-muted-foreground">
-                    共 {visibleItems.length} 条文案
+                  <p className="font-mono text-xs text-muted-foreground">
+                    {visibleItems.length} ITEMS
                   </p>
                 </div>
                 {hotFilterId && (
@@ -333,7 +333,7 @@ export function LibraryShell({
               </div>
 
               {pagedItems.length > 0 ? (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-5 xl:grid-cols-3">
                   {pagedItems.map((item) => {
                     const category = categoryMap.get(item.categoryId);
                     return (
@@ -348,7 +348,7 @@ export function LibraryShell({
                   })}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-20 text-center">
+                <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed py-20 text-center">
                   <SearchX className="size-8 text-muted-foreground" />
                   <div className="flex flex-col gap-1">
                     <p className="text-sm font-medium">没有找到匹配的文案</p>

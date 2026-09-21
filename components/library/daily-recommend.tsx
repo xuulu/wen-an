@@ -83,7 +83,7 @@ export function DailyRecommend({
   if (!recommended) return null;
 
   return (
-    <section className="rounded-xl border bg-card p-3">
+    <section className="rounded-2xl bg-card p-3 ring-1 ring-foreground/[0.07]">
       <div className="flex items-center gap-3">
         <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-rose-500 text-white">
           <Sparkles className="size-4" />

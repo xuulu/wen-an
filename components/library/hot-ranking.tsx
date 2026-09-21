@@ -15,7 +15,7 @@ export function HotRanking({
   if (items.length === 0) return null;
 
   return (
-    <section className="rounded-xl border bg-card p-4 sm:p-5">
+    <section className="rounded-2xl bg-card p-4 ring-1 ring-foreground/[0.07] sm:p-5">
       <div className="mb-3 flex items-center gap-2">
         <span className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-rose-500 text-white">
           <Flame className="size-4" />
