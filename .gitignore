@@ -32,6 +32,11 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# IDE 本地数据与运行时上传
+.trae/
+/public/uploads
 
 # vercel
 .vercel
