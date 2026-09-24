@@ -55,10 +55,10 @@ export async function POST(request: Request) {
     );
   }
 
-  // 冷却拦截：成功批量投稿后一段时间内禁止再次投稿
+  // 冷却拦截：成功批量投稿后一段时间内禁止再次投稿（时长由后台「站点设置」控制）
   const retryAfter = getUserBatchRetryAfter(
     user.id,
-    getUserBatchCooldownSeconds() * 1000
+    (await getUserBatchCooldownSeconds()) * 1000
   );
   if (retryAfter > 0) {
     return NextResponse.json(

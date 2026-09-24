@@ -370,6 +370,14 @@ export function AIReviewManager() {
                   className="w-48"
                 />
               </Field>
+              <Field label="批量投稿冷却时间（如 1h / 30m / 2d）">
+                <Input
+                  value={settings.user_batch_cooldown}
+                  placeholder="1h"
+                  onChange={(e) => set("user_batch_cooldown", e.target.value)}
+                  className="w-48"
+                />
+              </Field>
             </div>
           </section>
 

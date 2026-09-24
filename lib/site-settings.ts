@@ -36,6 +36,8 @@ export const SETTING_DEFAULTS = {
     "你是内容审核员。判断用户提交的文案是否合规。只返回 JSON，不要输出其他内容：内容明确合规则 {\"passed\": true, \"reason\": \"内容合规\"}；含违法、色情、赌博、暴力、虚假宣传、恶意引战等则 {\"passed\": false, \"reason\": \"简要中文理由\"}；无法确定或处于灰色地带则 {\"passed\": \"uncertain\", \"reason\": \"需要人工复核的原因\"}",
   // 审核日志保留条数（超出自动清理最旧记录）
   review_log_retention: "1000",
+  // 用户批量投稿冷却（成功投稿后再次投稿需等待，支持 1h/30m/2d 等格式；env 无对应变量）
+  user_batch_cooldown: "1h",
 } as const;
 
 export type SettingKey = keyof typeof SETTING_DEFAULTS;

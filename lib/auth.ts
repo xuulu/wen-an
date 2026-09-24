@@ -52,10 +52,14 @@ export function getAdminTokenTtl(): string {
   return getTokenTtl(process.env.ADMIN_TOKEN_TTL);
 }
 
-/** 用户批量投稿冷却时间（秒），支持 Nd/Nh/Nm，默认 1 小时 */
-export function getUserBatchCooldownSeconds(): number {
-  const value = process.env.USER_BATCH_COOLDOWN;
-  if (!value) return 60 * 60;
+/**
+ * 用户批量投稿冷却时间（秒）：优先读站点设置（后台可调），
+ * 支持 Nd/Nh/Nm 格式，非法或缺失回退 1 小时。
+ */
+export async function getUserBatchCooldownSeconds(): Promise<number> {
+  const { getSiteSettings } = await import("@/lib/site-settings");
+  const settings = await getSiteSettings();
+  const value = settings.user_batch_cooldown;
   const m = DURATION_RE.exec(value.trim());
   if (!m) return 60 * 60;
   const n = Number(m[1]);
