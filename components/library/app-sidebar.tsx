@@ -28,6 +28,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { getCategoryStyle } from "@/lib/copywriting";
 
 const categoryIcons: Record<string, LucideIcon> = {
@@ -154,6 +155,7 @@ export function AppSidebar({
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
+        <ThemeSwitcher />
         <button
           type="button"
           onClick={handleUserClick}

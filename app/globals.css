@@ -142,3 +142,64 @@
     animation: none;
   }
 }
+
+/* ---------- 霓虹彩蛋主题（大胆搞怪） ---------- */
+html[data-theme="neon"] {
+  --background: oklch(0.13 0.06 310);
+  --foreground: oklch(0.92 0.12 340);
+  --card: oklch(0.17 0.08 300);
+  --card-foreground: oklch(0.92 0.12 340);
+  --popover: oklch(0.17 0.08 300);
+  --popover-foreground: oklch(0.92 0.12 340);
+  --primary: oklch(0.78 0.18 160);
+  --primary-foreground: oklch(0.13 0.06 310);
+  --secondary: oklch(0.25 0.1 290);
+  --secondary-foreground: oklch(0.85 0.15 330);
+  --muted: oklch(0.22 0.09 295);
+  --muted-foreground: oklch(0.68 0.13 335);
+  --accent: oklch(0.28 0.12 305);
+  --accent-foreground: oklch(0.9 0.13 345);
+  --destructive: oklch(0.65 0.24 25);
+  --border: oklch(0.35 0.13 320);
+  --input: oklch(0.35 0.13 320);
+  --ring: oklch(0.78 0.18 160);
+  --chart-1: oklch(0.78 0.18 160);
+  --chart-2: oklch(0.75 0.2 330);
+  --chart-3: oklch(0.7 0.18 260);
+  --chart-4: oklch(0.8 0.16 60);
+  --chart-5: oklch(0.82 0.14 190);
+  --sidebar: oklch(0.15 0.07 305);
+  --sidebar-foreground: oklch(0.9 0.12 340);
+  --sidebar-primary: oklch(0.78 0.18 160);
+  --sidebar-primary-foreground: oklch(0.13 0.06 310);
+  --sidebar-accent: oklch(0.26 0.11 300);
+  --sidebar-accent-foreground: oklch(0.9 0.13 345);
+  --sidebar-border: oklch(0.33 0.12 315);
+  --sidebar-ring: oklch(0.78 0.18 160);
+  color-scheme: dark;
+}
+
+html[data-theme="neon"] body {
+  background:
+    radial-gradient(1200px 600px at 10% -10%, oklch(0.4 0.2 300 / 0.35), transparent 60%),
+    radial-gradient(1000px 500px at 110% 20%, oklch(0.45 0.2 180 / 0.3), transparent 55%),
+    radial-gradient(900px 600px at 50% 120%, oklch(0.45 0.22 340 / 0.28), transparent 60%),
+    var(--background);
+  background-attachment: fixed;
+  animation: neon-aurora 18s ease-in-out infinite alternate;
+}
+
+@keyframes neon-aurora {
+  from { filter: hue-rotate(0deg); }
+  to { filter: hue-rotate(45deg); }
+}
+
+html[data-theme="neon"] h1,
+html[data-theme="neon"] h2,
+html[data-theme="neon"] h3 {
+  text-shadow: 0 0 8px oklch(0.78 0.18 160 / 0.5), 0 0 24px oklch(0.75 0.2 330 / 0.35);
+}
+
+html[data-theme="neon"] a {
+  text-shadow: 0 0 6px oklch(0.8 0.16 60 / 0.25);
+}

@@ -1,11 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+import { ThemeProvider } from "@/components/theme-provider";
 import {
   getSiteSettings,
   resolveSiteUrl,
 } from "@/lib/site-settings";
+import { resolveTheme, themeInitScript } from "@/lib/theme";
 
 const geistSans = Geist({
   variable: "--font-sans",
@@ -94,6 +97,10 @@ export default async function RootLayout({
 }: LayoutProps<"/">) {
   const settings = await getSiteSettings();
   const siteUrl = resolveSiteUrl(settings);
+  // 主题：SSR 从 cookie 解析（system 时 class 由首帧脚本定，SSR 不输出主题类，避免 hydration 冲突）
+  const store = await cookies();
+  const themeName = resolveTheme(store.get("wenan-theme")?.value);
+  const isDarkSsr = themeName === "dark";
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -118,10 +125,17 @@ export default async function RootLayout({
   return (
     <html
       lang="zh-CN"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+      data-theme={themeName !== "system" ? themeName : undefined}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased ${isDarkSsr ? "dark" : ""}`}
+      style={isDarkSsr ? { colorScheme: "dark" } : undefined}
     >
+      <head>
+        {/* 防 FOUC：首帧前同步设置主题（与 SSR cookie 解析逻辑一致） */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="min-h-full flex flex-col">
-        {children}
+        <ThemeProvider initialTheme={themeName}>{children}</ThemeProvider>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
