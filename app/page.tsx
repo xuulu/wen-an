@@ -15,6 +15,7 @@ import {
   getTopFavorited,
 } from "@/lib/copywriting-data";
 import { buildSeoMetadata, getSeoContext } from "@/lib/seo";
+import { getSiteSettings } from "@/lib/site-settings";
 import type { CopyItem } from "@/lib/copywriting";
 
 export const dynamic = "force-dynamic";
@@ -33,8 +34,10 @@ function pickDailyRecommend(items: CopyItem[]): CopyItem | null {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
+  // 首页标题跟随后台「站点设置」：站点名 + 标题后缀
+  const ctx = await getSeoContext();
   return buildSeoMetadata({
-    title: "精选文案灵感库 · 一键复制",
+    title: `${ctx.siteName} - ${ctx.settings.site_title_suffix}`,
     path: "/",
     type: "website",
   });
@@ -70,6 +73,10 @@ export default async function Home({
 
   const initialRecommended = pickDailyRecommend(firstPage.items);
 
+  // 首页跑马灯：内容/速度/开关来自后台「站点设置」（纯文本，不嵌入 HTML）
+  const settings = await getSiteSettings();
+  const marqueeSpeed = Number(settings.marquee_speed_seconds) || 32;
+
   // 首页结构化数据：WebPage（含搜索意图）+ Organization，不重复根布局的 WebSite
   const seoContext = await getSeoContext();
   const { siteUrl } = seoContext;
@@ -78,7 +85,7 @@ export default async function Home({
     "@graph": [
       {
         "@type": "WebPage",
-        name: `${seoContext.siteName} - 精选文案灵感库`,
+        name: `${seoContext.siteName} - ${seoContext.settings.site_title_suffix}`,
         ...(siteUrl ? { url: siteUrl } : {}),
         inLanguage: "zh-CN",
       },
@@ -96,7 +103,11 @@ export default async function Home({
   return (
     <>
       <JsonLd data={homepageJsonLd} />
-      <MarqueeBanner />
+      <MarqueeBanner
+        enabled={settings.marquee_enabled !== "false"}
+        content={settings.marquee_content}
+        speedSeconds={marqueeSpeed}
+      />
       <LibraryShell
         initialItems={firstPage.items}
         total={firstPage.total}

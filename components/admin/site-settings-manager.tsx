@@ -238,6 +238,40 @@ export function SiteSettingsManager() {
         </div>
       </Section>
 
+      <Section title="首页跑马灯" desc="首页顶部通栏滚动公告；纯文本渲染，不嵌入 HTML">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="启用跑马灯">
+            <label className="flex h-9 w-fit cursor-pointer items-center gap-2 rounded-md border px-3 text-sm">
+              <input
+                type="checkbox"
+                checked={settings.marquee_enabled !== "false"}
+                onChange={(e) =>
+                  set("marquee_enabled", e.target.checked ? "true" : "false")
+                }
+                className="size-4 accent-cyan-500"
+              />
+              显示在首页顶部
+            </label>
+          </Field>
+          <Field label="滚动速度" desc="滚动一周所需秒数，越小越快（默认 32）">
+            <Input
+              type="number"
+              min={5}
+              max={120}
+              value={settings.marquee_speed_seconds}
+              onChange={(e) => set("marquee_speed_seconds", e.target.value)}
+            />
+          </Field>
+        </div>
+        <Field label="滚动内容" desc="可多行；每行将作为一条独立文案依次滚动">
+          <TextareaField
+            rows={3}
+            value={settings.marquee_content}
+            onChange={(v) => set("marquee_content", v)}
+          />
+        </Field>
+      </Section>
+
       <Section title="SEO 设置" desc="搜索引擎收录与搜索结果展示">
         <Field label="SEO 简介（建议 50-160 字）">
           <TextareaField

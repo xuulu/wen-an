@@ -38,6 +38,12 @@ export const SETTING_DEFAULTS = {
   review_log_retention: "1000",
   // 用户批量投稿冷却（成功投稿后再次投稿需等待，支持 1h/30m/2d 等格式；env 无对应变量）
   user_batch_cooldown: "1h",
+  // 首页顶部跑马灯（后台可视化配置，纯文本，不嵌入 HTML）
+  marquee_enabled: "true",
+  marquee_content:
+    "社区共建需要大家，欢迎注册投稿，为社区贡献一份力量。",
+  // 跑马灯滚动一周时长（秒）；越小越快
+  marquee_speed_seconds: "32",
 } as const;
 
 export type SettingKey = keyof typeof SETTING_DEFAULTS;

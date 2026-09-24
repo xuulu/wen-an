@@ -6,6 +6,11 @@ import { Handshake, Sparkles } from "lucide-react";
 /**
  * 首页顶部通栏跑马灯（GitHub 开源社区风格）
  *
+ * 内容与速度由后台「站点设置 → 首页跑马灯」配置，服务端读表后传入：
+ * - content：文案内容（纯文本，不嵌入 HTML，避免 XSS）
+ * - speedSeconds：滚动一周时长（秒），经 CSS 变量 --marquee-duration 生效
+ * - enabled=false 时整条不渲染
+ *
  * 性能设计：
  * - 纯文本 + CSS 动画，零图片零请求，不参与 LCP 主体计算；
  * - 外层固定高度（h-9）+ overflow-hidden，内容单行不换行 → 无 CLS；
@@ -13,11 +18,31 @@ import { Handshake, Sparkles } from "lucide-react";
  * - prefers-reduced-motion 时完全停用动画，静态展示文案；
  * - 组件无 state / 无 effect / 无事件监听，客户端开销可忽略。
  */
-export function MarqueeBanner() {
-  const line = "社区共建需要大家，欢迎注册投稿，为社区贡献一份力量。";
+export function MarqueeBanner({
+  enabled = true,
+  content = "",
+  speedSeconds = 32,
+}: {
+  enabled?: boolean;
+  content?: string;
+  speedSeconds?: number;
+}) {
+  if (!enabled) return null;
+
+  // 多行内容合并为一行滚动（分隔符），空内容回退默认文案
+  const line =
+    content
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(" · ") || "社区共建需要大家，欢迎注册投稿，为社区贡献一份力量。";
+  const safeSpeed = Number.isFinite(speedSeconds) && speedSeconds > 0 ? speedSeconds : 32;
 
   return (
-    <div className="relative flex h-9 w-full items-center overflow-hidden border-b bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 text-slate-200 [mask-image:linear-gradient(to_right,transparent,black_4%,black_96%,transparent)]">
+    <div
+      className="relative flex h-9 w-full items-center overflow-hidden border-b bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 text-slate-200 [mask-image:linear-gradient(to_right,transparent,black_4%,black_96%,transparent)]"
+      style={{ "--marquee-duration": `${safeSpeed}s` } as React.CSSProperties}
+    >
       {/* 无缝滚动：轨道 = 左右两个完全相同的半段，translateX(-50%) 循环 */}
       <div className="marquee-track flex w-max items-center whitespace-nowrap">
         <MarqueeGroup line={line} />

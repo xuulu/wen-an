@@ -134,7 +134,7 @@
   to { transform: translateX(-50%); }
 }
 .marquee-track {
-  animation: wenan-marquee 32s linear infinite;
+  animation: wenan-marquee var(--marquee-duration, 32s) linear infinite;
   will-change: transform;
 }
 @media (prefers-reduced-motion: reduce) {
