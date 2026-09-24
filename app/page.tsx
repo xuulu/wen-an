@@ -1,14 +1,18 @@
 import { randomUUID } from "node:crypto";
 
+import type { Metadata } from "next";
+
 import { LibraryShell } from "@/components/library/library-shell";
 import { MarqueeBanner } from "@/components/library/marquee-banner";
 import { SiteFooter } from "@/components/library/site-footer";
+import { JsonLd } from "@/components/seo/json-ld";
 import { getCurrentUser } from "@/lib/auth";
 import {
   getCategories,
   getCopyItems,
   getTopFavorited,
 } from "@/lib/copywriting-data";
+import { buildSeoMetadata, getSeoContext } from "@/lib/seo";
 import type { CopyItem } from "@/lib/copywriting";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +25,14 @@ function pickDailyRecommend(items: CopyItem[]): CopyItem | null {
       86400000
   );
   return items[dayOfYear % items.length];
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  return buildSeoMetadata({
+    title: "精选文案灵感库 · 一键复制",
+    path: "/",
+    type: "website",
+  });
 }
 
 export default async function Home({
@@ -39,8 +51,32 @@ export default async function Home({
 
   const initialRecommended = pickDailyRecommend(items);
 
+  // 首页结构化数据：WebPage（含搜索意图）+ Organization，不重复根布局的 WebSite
+  const seoContext = await getSeoContext();
+  const { siteUrl } = seoContext;
+  const homepageJsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        name: `${seoContext.siteName} - 精选文案灵感库`,
+        ...(siteUrl ? { url: siteUrl } : {}),
+        inLanguage: "zh-CN",
+      },
+      {
+        "@type": "Organization",
+        name: seoContext.siteName,
+        ...(siteUrl ? { url: siteUrl } : {}),
+        ...(seoContext.settings.site_logo
+          ? { logo: seoContext.settings.site_logo }
+          : {}),
+      },
+    ],
+  };
+
   return (
     <>
+      <JsonLd data={homepageJsonLd} />
       <MarqueeBanner />
       <LibraryShell
         items={items}

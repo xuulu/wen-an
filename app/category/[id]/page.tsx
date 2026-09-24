@@ -5,13 +5,19 @@ import { notFound } from "next/navigation";
 
 import { LibraryShell } from "@/components/library/library-shell";
 import { SiteFooter } from "@/components/library/site-footer";
+import { JsonLd } from "@/components/seo/json-ld";
 import { getCurrentUser } from "@/lib/auth";
 import {
   getCategories,
   getCopyItems,
   getTopFavorited,
 } from "@/lib/copywriting-data";
-import { getSiteSettings, resolveSiteUrl } from "@/lib/site-settings";
+import {
+  breadcrumbJsonLd,
+  buildSeoMetadata,
+  getSeoContext,
+  itemListJsonLd,
+} from "@/lib/seo";
 import type { CopyItem } from "@/lib/copywriting";
 
 export const dynamic = "force-dynamic";
@@ -39,21 +45,20 @@ export async function generateMetadata({
   params,
 }: CategoryPageProps): Promise<Metadata> {
   const { id } = await params;
-  const [categories, settings] = await Promise.all([
-    getCategories(),
-    getSiteSettings(),
-  ]);
+  const categories = await getCategories();
   const category = categories.find((c) => c.id === id);
-  if (!category) return { title: "分类不存在" };
+  if (!category) return { title: "分类不存在", robots: { index: false, follow: false } };
 
   // 类目名本身可能已含「文案」（如「雷霆文案」），避免拼出「文案文案」
   const heading = categoryHeading(category.label);
-  const description = `${category.label}精选合集，每日更新优质${category.label}模板，一键复制即用。${settings.seo_description}`;
-  return {
+  const description = `${category.label}精选合集，每日更新优质${category.label}模板，一键复制即用。`;
+  return buildSeoMetadata({
     title: heading,
     description,
-    alternates: { canonical: `/category/${category.id}` },
-  };
+    path: `/category/${category.id}`,
+    keywords: [category.label, `${category.label}文案`, "文案大全"],
+    type: "website",
+  });
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
@@ -75,49 +80,31 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const heading = categoryHeading(category.label);
 
   // 对外域名：后台 site_url → SITE_URL env → 空（绝不输出 localhost）
-  const siteUrl = resolveSiteUrl(settings);
+  const { siteUrl } = await getSeoContext();
 
   // JSON-LD：ItemList（前 20 条）+ 面包屑，供搜索结果增强展现
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "ItemList",
+      itemListJsonLd({
         name: heading,
         description: `${category.label}精选合集`,
-        numberOfItems: categoryItems.length,
-        itemListElement: categoryItems.slice(0, 20).map((item, i) => ({
-          "@type": "ListItem",
-          position: i + 1,
-          name: item.title,
-          ...(siteUrl ? { url: `${siteUrl}/copy/${item.id}` } : {}),
+        items: categoryItems.slice(0, 20).map((item) => ({
+          title: item.title,
+          path: `/copy/${item.id}`,
         })),
-      },
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          {
-            "@type": "ListItem",
-            position: 1,
-            name: "首页",
-            ...(siteUrl ? { item: siteUrl } : {}),
-          },
-          {
-            "@type": "ListItem",
-            position: 2,
-            name: category.label,
-          },
-        ],
-      },
+        siteUrl,
+      }),
+      breadcrumbJsonLd(
+        [{ name: "首页", path: "/" }, { name: category.label }],
+        siteUrl
+      ),
     ],
   };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      <JsonLd data={structuredData} />
       <LibraryShell
         items={items}
         categories={categories}

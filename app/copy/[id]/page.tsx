@@ -5,13 +5,19 @@ import { ChevronRight, Library } from "lucide-react";
 
 import { CopyDetailActions } from "@/components/library/copy-detail-actions";
 import { SiteFooter } from "@/components/library/site-footer";
+import { JsonLd } from "@/components/seo/json-ld";
 import { getCurrentUser } from "@/lib/auth";
 import {
   getCategories,
   getCopyItemById,
   getCopyItems,
 } from "@/lib/copywriting-data";
-import { getSiteSettings, resolveSiteUrl } from "@/lib/site-settings";
+import {
+  breadcrumbJsonLd,
+  buildSeoMetadata,
+  creativeWorkJsonLd,
+  getSeoContext,
+} from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -27,21 +33,21 @@ export async function generateMetadata({
   if (!item || item.status !== "approved") {
     return { title: "文案不存在", robots: { index: false, follow: false } };
   }
-  return {
+  return buildSeoMetadata({
     title: item.title,
-    description: item.content.slice(0, 120),
-    alternates: { canonical: `/copy/${id}` },
-  };
+    description: item.content.slice(0, 160),
+    path: `/copy/${id}`,
+    type: "article",
+  });
 }
 
 export default async function CopyPage({ params }: CopyPageProps) {
   const { id } = await params;
   const user = await getCurrentUser();
 
-  const [item, categories, settings] = await Promise.all([
+  const [item, categories] = await Promise.all([
     getCopyItemById(id, user?.id ?? 0),
     getCategories(),
-    getSiteSettings(),
   ]);
 
   if (!item || item.status !== "approved") notFound();
@@ -49,7 +55,8 @@ export default async function CopyPage({ params }: CopyPageProps) {
   const category = categories.find((c) => c.id === item.categoryId);
 
   // 对外域名：后台 site_url → SITE_URL env → 空（绝不输出 localhost）
-  const siteUrl = resolveSiteUrl(settings);
+  const seo = await getSeoContext();
+  const { siteUrl } = seo;
 
   // 同分类推荐，同时作为内链入口帮助爬虫发现更多详情页
   const { items: sameCategory } = await getCopyItems({
@@ -60,48 +67,28 @@ export default async function CopyPage({ params }: CopyPageProps) {
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "CreativeWork",
-        name: item.title,
-        text: item.content,
-        ...(siteUrl ? { url: `${siteUrl}/copy/${id}` } : {}),
-        datePublished: item.updatedAt,
-        dateModified: item.updatedAt,
-        articleSection: category?.label,
-      },
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          {
-            "@type": "ListItem",
-            position: 1,
-            name: "首页",
-            ...(siteUrl ? { item: siteUrl } : {}),
-          },
-          {
-            "@type": "ListItem",
-            position: 2,
-            name: category?.label ?? "未分类",
-            ...(siteUrl && category
-              ? { item: `${siteUrl}/category/${category.id}` }
-              : {}),
-          },
-          {
-            "@type": "ListItem",
-            position: 3,
-            name: item.title,
-          },
+      creativeWorkJsonLd({
+        title: item.title,
+        content: item.content,
+        path: `/copy/${id}`,
+        siteUrl,
+        date: item.updatedAt,
+        category: category?.label,
+      }),
+      breadcrumbJsonLd(
+        [
+          { name: "首页", path: "/" },
+          ...(category ? [{ name: category.label, path: `/category/${category.id}` }] : []),
+          { name: item.title },
         ],
-      },
+        siteUrl
+      ),
     ],
   };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      <JsonLd data={structuredData} />
 
       <div className="min-h-screen">
         <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background/80 px-4 backdrop-blur">
@@ -109,7 +96,7 @@ export default async function CopyPage({ params }: CopyPageProps) {
             <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 text-white">
               <Library className="size-4" />
             </span>
-            <span className="text-sm font-semibold">{settings.site_name}</span>
+            <span className="text-sm font-semibold">{seo.siteName}</span>
           </Link>
           <Link
             href="/"
