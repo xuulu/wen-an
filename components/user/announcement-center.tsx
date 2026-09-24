@@ -1,20 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Loader2,
-  Megaphone,
-  MessageSquareText,
-  Pin,
-} from "lucide-react";
+import { Loader2, Pin } from "lucide-react";
 
-import { FeedbacksPanel } from "@/components/user/feedbacks-panel";
 import type { Announcement } from "@/lib/announcement";
 
-type SubTab = "announcements" | "feedbacks";
-
 /** 公告列表（用户可读，未隐藏、置顶优先） */
-function AnnouncementsView() {
+export function AnnouncementCenter() {
   const [items, setItems] = useState<Announcement[] | null>(null);
   const [error, setError] = useState(false);
 
@@ -77,44 +69,6 @@ function AnnouncementsView() {
           </p>
         </article>
       ))}
-    </div>
-  );
-}
-
-/** 用户中心反馈中心：子 tab = 公告 / 反馈 */
-export function FeedbackCenter() {
-  const [sub, setSub] = useState<SubTab>("announcements");
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex w-full gap-1 self-start rounded-lg border bg-card p-1">
-        <button
-          type="button"
-          onClick={() => setSub("announcements")}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-            sub === "announcements"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:bg-accent hover:text-foreground"
-          }`}
-        >
-          <Megaphone className="size-4" />
-          公告
-        </button>
-        <button
-          type="button"
-          onClick={() => setSub("feedbacks")}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-            sub === "feedbacks"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:bg-accent hover:text-foreground"
-          }`}
-        >
-          <MessageSquareText className="size-4" />
-          反馈
-        </button>
-      </div>
-
-      {sub === "announcements" ? <AnnouncementsView /> : <FeedbacksPanel />}
     </div>
   );
 }

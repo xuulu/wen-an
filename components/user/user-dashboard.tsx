@@ -6,21 +6,29 @@ import {
   BookMarked,
   Home,
   LogOut,
+  Megaphone,
   MessageSquareText,
   PenLine,
   Settings,
 } from "lucide-react";
 
+import { AnnouncementCenter } from "@/components/user/announcement-center";
 import { FavoritesPanel } from "@/components/user/favorites-panel";
-import { FeedbackCenter } from "@/components/user/feedback-center";
+import { FeedbacksPanel } from "@/components/user/feedbacks-panel";
 import { SettingsPanel } from "@/components/user/settings-panel";
 import { SubmissionsPanel } from "@/components/user/submissions-panel";
 import { Button } from "@/components/ui/button";
 import type { Category } from "@/lib/copywriting";
 
-type TabKey = "favorites" | "submissions" | "feedbacks" | "settings";
+type TabKey =
+  | "announcements"
+  | "favorites"
+  | "submissions"
+  | "feedbacks"
+  | "settings";
 
 const TABS: { key: TabKey; label: string; icon: typeof BookMarked }[] = [
+  { key: "announcements", label: "公告", icon: Megaphone },
   { key: "favorites", label: "我的收藏", icon: BookMarked },
   { key: "submissions", label: "我的投稿", icon: PenLine },
   { key: "feedbacks", label: "意见反馈", icon: MessageSquareText },
@@ -35,7 +43,8 @@ export function UserDashboard({
   categories: Category[];
 }) {
   const router = useRouter();
-  const [tab, setTab] = useState<TabKey>("favorites");
+  // 公告是首个 tab，默认打开
+  const [tab, setTab] = useState<TabKey>("announcements");
 
   async function handleLogout() {
     await fetch("/api/user/logout", { method: "POST" });
@@ -100,9 +109,10 @@ export function UserDashboard({
 
       {/* 面板内容 */}
       <section className="mt-4">
+        {tab === "announcements" && <AnnouncementCenter />}
         {tab === "favorites" && <FavoritesPanel />}
         {tab === "submissions" && <SubmissionsPanel categories={categories} />}
-        {tab === "feedbacks" && <FeedbackCenter />}
+        {tab === "feedbacks" && <FeedbacksPanel />}
         {tab === "settings" && <SettingsPanel nickname={nickname} />}
       </section>
     </main>

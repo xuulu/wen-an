@@ -5,7 +5,6 @@ import {
   BarChart3,
   BrainCircuit,
   LayoutGrid,
-  Megaphone,
   MessageSquareText,
   PenLine,
   Settings,
@@ -32,7 +31,6 @@ type TabKey =
   | "copy"
   | "categories"
   | "feedbacks"
-  | "announcements"
   | "ai-review"
   | "settings";
 
@@ -41,7 +39,6 @@ const TABS: { key: TabKey; label: string; icon: typeof PenLine }[] = [
   { key: "copy", label: "文案管理", icon: PenLine },
   { key: "categories", label: "类目管理", icon: LayoutGrid },
   { key: "feedbacks", label: "反馈管理", icon: MessageSquareText },
-  { key: "announcements", label: "公告管理", icon: Megaphone },
   { key: "ai-review", label: "AI 审核", icon: BrainCircuit },
   { key: "settings", label: "站点设置", icon: Settings },
 ];
@@ -86,18 +83,21 @@ export function AdminPanelTabs({
       </div>
 
       {tab === "overview" && (
-        <StatsOverview
-          stats={stats}
-          topFavorited={topFavorited}
-          categoryDist={categoryDist}
-          topContributors={topContributors}
-          recentUsers={recentUsers}
-        />
+        <div className="flex flex-col gap-5">
+          <StatsOverview
+            stats={stats}
+            topFavorited={topFavorited}
+            categoryDist={categoryDist}
+            topContributors={topContributors}
+            recentUsers={recentUsers}
+          />
+          {/* 公告系统放首个 tab（数据概览）页：管理员一进来即可维护公告 */}
+          <AnnouncementManager />
+        </div>
       )}
       {tab === "copy" && <CopyManager categories={categories} />}
       {tab === "categories" && <CategoryManager categories={categories} />}
       {tab === "feedbacks" && <FeedbackManager />}
-      {tab === "announcements" && <AnnouncementManager />}
       {tab === "ai-review" && <AIReviewManager />}
       {tab === "settings" && <SiteSettingsManager />}
     </div>
