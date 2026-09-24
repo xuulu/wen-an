@@ -317,14 +317,16 @@ export function AnnouncementManager() {
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="right" className="w-full sm:max-w-md">
-          <SheetHeader>
+          {/* padding 规范：SheetContent 无默认内边距，Header/内容/Footer 各自 px-5
+              （与新建文案 copy-form-sheet 的修复方式一致，避免文字紧贴边框） */}
+          <SheetHeader className="px-5">
             <SheetTitle>{editing ? "编辑公告" : "新建公告"}</SheetTitle>
             <SheetDescription>
               填写标题与正文；可在发布后随时隐藏或置顶
             </SheetDescription>
           </SheetHeader>
 
-          <div className="flex flex-col gap-4 py-4">
+          <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-5">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="ann-title" className="text-sm font-medium">
                 标题
@@ -385,7 +387,7 @@ export function AnnouncementManager() {
             )}
           </div>
 
-          <SheetFooter>
+          <SheetFooter className="px-5">
             <Button
               variant="outline"
               onClick={() => setSheetOpen(false)}
