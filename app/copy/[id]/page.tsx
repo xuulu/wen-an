@@ -11,7 +11,7 @@ import {
   getCopyItemById,
   getCopyItems,
 } from "@/lib/copywriting-data";
-import { getSiteSettings } from "@/lib/site-settings";
+import { getSiteSettings, resolveSiteUrl } from "@/lib/site-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +48,9 @@ export default async function CopyPage({ params }: CopyPageProps) {
 
   const category = categories.find((c) => c.id === item.categoryId);
 
+  // 对外域名：后台 site_url → SITE_URL env → 空（绝不输出 localhost）
+  const siteUrl = resolveSiteUrl(settings);
+
   // 同分类推荐，同时作为内链入口帮助爬虫发现更多详情页
   const { items: sameCategory } = await getCopyItems({
     categoryId: item.categoryId,
@@ -61,7 +64,7 @@ export default async function CopyPage({ params }: CopyPageProps) {
         "@type": "CreativeWork",
         name: item.title,
         text: item.content,
-        url: `${settings.site_url}/copy/${id}`,
+        ...(siteUrl ? { url: `${siteUrl}/copy/${id}` } : {}),
         datePublished: item.updatedAt,
         dateModified: item.updatedAt,
         keywords: item.tags.join(","),
@@ -74,13 +77,15 @@ export default async function CopyPage({ params }: CopyPageProps) {
             "@type": "ListItem",
             position: 1,
             name: "首页",
-            item: settings.site_url,
+            ...(siteUrl ? { item: siteUrl } : {}),
           },
           {
             "@type": "ListItem",
             position: 2,
             name: category?.label ?? "未分类",
-            item: category ? `${settings.site_url}/category/${category.id}` : undefined,
+            ...(siteUrl && category
+              ? { item: `${siteUrl}/category/${category.id}` }
+              : {}),
           },
           {
             "@type": "ListItem",

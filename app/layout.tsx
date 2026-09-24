@@ -2,7 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-import { getSiteSettings } from "@/lib/site-settings";
+import {
+  getSiteSettings,
+  resolveSiteUrl,
+} from "@/lib/site-settings";
 
 const geistSans = Geist({
   variable: "--font-sans",
@@ -14,25 +17,28 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-/** 把 public 相对路径补成完整 URL */
+/** 把 public 相对路径补成完整 URL；未配置对外域名（base 为空）时返回空，不输出相对资源 */
 function resolveAsset(path: string, base: string): string {
   if (!path) return "";
   if (/^https?:\/\//.test(path)) return path;
+  if (!base) return "";
   return `${base}/${path.replace(/^\//, "")}`;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
+  // 对外域名：后台 site_url → SITE_URL env → 空（绝不输出 localhost）
+  const siteUrl = resolveSiteUrl(settings);
   const keywords = settings.seo_keywords
     .split(",")
     .map((word) => word.trim())
     .filter(Boolean);
   const ogImage = settings.site_og_image
-    ? resolveAsset(settings.site_og_image, settings.site_url)
+    ? resolveAsset(settings.site_og_image, siteUrl)
     : "";
 
   return {
-    metadataBase: new URL(settings.site_url),
+    metadataBase: siteUrl ? new URL(siteUrl) : undefined,
     title: {
       default: `${settings.site_name} - ${settings.site_title_suffix}`,
       template: `%s | ${settings.site_name}`,
@@ -48,7 +54,7 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       type: "website",
       locale: "zh_CN",
-      url: settings.site_url,
+      url: siteUrl || undefined,
       siteName: settings.site_name,
       title: `${settings.site_name} - ${settings.site_title_suffix}`,
       description: settings.seo_description,
@@ -87,21 +93,26 @@ export default async function RootLayout({
   children,
 }: LayoutProps<"/">) {
   const settings = await getSiteSettings();
-  const jsonLd = {
+  const siteUrl = resolveSiteUrl(settings);
+  const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: settings.site_name,
-    url: settings.site_url,
     description: settings.seo_description,
     inLanguage: "zh-CN",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: {
-        "@type": "EntryPoint",
-        urlTemplate: `${settings.site_url}/?q={search_term_string}`,
-      },
-      "query-input": "required name=search_term_string",
-    },
+    ...(siteUrl
+      ? {
+          url: siteUrl,
+          potentialAction: {
+            "@type": "SearchAction",
+            target: {
+              "@type": "EntryPoint",
+              urlTemplate: `${siteUrl}/?q={search_term_string}`,
+            },
+            "query-input": "required name=search_term_string",
+          },
+        }
+      : {}),
   };
 
   return (

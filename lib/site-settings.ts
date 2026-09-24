@@ -7,7 +7,9 @@ export const SETTING_DEFAULTS = {
   // 基本
   site_name: "简心文案库",
   site_title_suffix: "精选文案灵感库 · 一键复制",
-  site_url: "http://localhost:3000",
+  // 站点对外域名（https://example.com）。留空时 sitemap/robots/OG 不输出本机地址，
+  // 部署兜底可用环境变量 SITE_URL（见 resolveSiteUrl）。
+  site_url: "",
   site_icon: "/favicon.ico",
   site_logo: "",
   site_og_image: "",
@@ -83,4 +85,41 @@ export async function updateSiteSettings(
 
 export function invalidateSiteSettingsCache(): void {
   cache = null;
+}
+
+/* ---------------- SEO 域名解析 ---------------- */
+
+/** 本机地址（localhost / 127.0.0.1 / 0.0.0.0 / ::1）视为未配置，绝不能进 sitemap / robots / OG */
+export function isLocalhostUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "0.0.0.0" ||
+      host === "::1"
+    );
+  } catch {
+    return true; // 非法 URL 视为未配置
+  }
+}
+
+function trimTrailingSlash(url: string): string {
+  return url.replace(/\/+$/, "");
+}
+
+/**
+ * 解析对外站点域名（完整 origin，不含尾部斜杠），供 sitemap / robots / metadataBase / OG 使用。
+ * 优先级：后台「站点设置」的 site_url → 环境变量 SITE_URL → 空字符串（未配置）。
+ * localhost 等本机地址一律视为未配置，避免 SEO 输出本机地址。
+ */
+export function resolveSiteUrl(settings: SiteSettings): string {
+  const candidates = [settings.site_url?.trim(), process.env.SITE_URL?.trim()];
+  for (const raw of candidates) {
+    if (!raw) continue;
+    if (!/^https?:\/\//i.test(raw)) continue;
+    if (isLocalhostUrl(raw)) continue;
+    return trimTrailingSlash(raw);
+  }
+  return "";
 }

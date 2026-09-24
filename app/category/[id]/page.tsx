@@ -11,7 +11,7 @@ import {
   getCopyItems,
   getTopFavorited,
 } from "@/lib/copywriting-data";
-import { getSiteSettings } from "@/lib/site-settings";
+import { getSiteSettings, resolveSiteUrl } from "@/lib/site-settings";
 import type { CopyItem } from "@/lib/copywriting";
 
 export const dynamic = "force-dynamic";
@@ -74,6 +74,9 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const initialRecommended = pickDailyRecommend(categoryItems);
   const heading = categoryHeading(category.label);
 
+  // 对外域名：后台 site_url → SITE_URL env → 空（绝不输出 localhost）
+  const siteUrl = resolveSiteUrl(settings);
+
   // JSON-LD：ItemList（前 20 条）+ 面包屑，供搜索结果增强展现
   const structuredData = {
     "@context": "https://schema.org",
@@ -87,7 +90,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           "@type": "ListItem",
           position: i + 1,
           name: item.title,
-          url: `${settings.site_url}/copy/${item.id}`,
+          ...(siteUrl ? { url: `${siteUrl}/copy/${item.id}` } : {}),
         })),
       },
       {
@@ -97,7 +100,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
             "@type": "ListItem",
             position: 1,
             name: "首页",
-            item: settings.site_url,
+            ...(siteUrl ? { item: siteUrl } : {}),
           },
           {
             "@type": "ListItem",

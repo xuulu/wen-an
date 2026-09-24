@@ -28,9 +28,11 @@ function Section({
 
 function Field({
   label,
+  desc,
   children,
 }: {
   label: string;
+  desc?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -39,6 +41,9 @@ function Field({
         {label}
       </label>
       {children}
+      {desc && (
+        <p className="text-[11px] leading-snug text-muted-foreground/70">{desc}</p>
+      )}
     </div>
   );
 }
@@ -164,9 +169,10 @@ export function SiteSettingsManager() {
               onChange={(e) => set("site_title_suffix", e.target.value)}
             />
           </Field>
-          <Field label="站点域名">
+          <Field label="站点域名" desc="用于 sitemap / robots / SEO，例：https://example.com（留空则不输出）">
             <Input
               value={settings.site_url}
+              placeholder="https://example.com"
               onChange={(e) => set("site_url", e.target.value)}
             />
           </Field>
