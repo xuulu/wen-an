@@ -41,6 +41,7 @@ export function CopyDetailActions({
   const [copied, setCopied] = useState(false);
   const [favorite, setFavorite] = useState(initialFavorite);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [favAnim, setFavAnim] = useState<"pop" | "shrink" | null>(null);
 
   async function handleCopy() {
     await copyText(content);
@@ -55,6 +56,8 @@ export function CopyDetailActions({
     }
 
     const willFavorite = !favorite;
+    setFavAnim(willFavorite ? "pop" : "shrink");
+    window.setTimeout(() => setFavAnim(null), 420);
     setFavorite(willFavorite);
     try {
       if (willFavorite) {
@@ -93,21 +96,22 @@ export function CopyDetailActions({
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        onClick={handleCopy}
-        className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-5 text-white shadow-md shadow-cyan-500/20 hover:from-cyan-400 hover:to-blue-500"
-      >
-        {copied ? <Check /> : <Copy />}
-        {copied ? "已复制" : "一键复制"}
-      </Button>
+    <div className="flex flex-wrap items-center gap-2">
       <Button
         variant="outline"
         onClick={handleToggleFavorite}
         className="rounded-full px-4 data-[fav=true]:border-amber-500/40 data-[fav=true]:text-amber-600"
         data-fav={favorite}
       >
-        <Star className={favorite ? "fill-amber-400 text-amber-400" : undefined} />
+        <Star
+          className={`${favorite ? "fill-amber-400 text-amber-400" : ""} ${
+            favAnim === "pop"
+              ? "fav-pop"
+              : favAnim === "shrink"
+                ? "fav-shrink"
+                : ""
+          }`}
+        />
         {favorite ? "已收藏" : "收藏"}
       </Button>
       <Button
@@ -124,6 +128,14 @@ export function CopyDetailActions({
           </>
         )}
         {linkCopied ? "链接已复制" : "分享"}
+      </Button>
+      {/* 复制主按钮放最右，与首页卡片"复制在右侧"的直觉一致 */}
+      <Button
+        onClick={handleCopy}
+        className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-5 text-white shadow-md shadow-cyan-500/20 hover:from-cyan-400 hover:to-blue-500"
+      >
+        {copied ? <Check /> : <Copy />}
+        {copied ? "已复制" : "一键复制"}
       </Button>
     </div>
   );

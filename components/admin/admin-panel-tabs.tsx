@@ -5,12 +5,14 @@ import {
   BarChart3,
   BrainCircuit,
   LayoutGrid,
+  Megaphone,
   MessageSquareText,
   PenLine,
   Settings,
 } from "lucide-react";
 
 import { AIReviewManager } from "@/components/admin/ai-review-manager";
+import { AnnouncementManager } from "@/components/admin/announcement-manager";
 import { CategoryManager } from "@/components/admin/category-manager";
 import { CopyManager } from "@/components/admin/copy-manager";
 import { FeedbackManager } from "@/components/admin/feedback-manager";
@@ -30,6 +32,7 @@ type TabKey =
   | "copy"
   | "categories"
   | "feedbacks"
+  | "announcements"
   | "ai-review"
   | "settings";
 
@@ -38,6 +41,7 @@ const TABS: { key: TabKey; label: string; icon: typeof PenLine }[] = [
   { key: "copy", label: "文案管理", icon: PenLine },
   { key: "categories", label: "类目管理", icon: LayoutGrid },
   { key: "feedbacks", label: "反馈管理", icon: MessageSquareText },
+  { key: "announcements", label: "公告管理", icon: Megaphone },
   { key: "ai-review", label: "AI 审核", icon: BrainCircuit },
   { key: "settings", label: "站点设置", icon: Settings },
 ];
@@ -93,6 +97,7 @@ export function AdminPanelTabs({
       {tab === "copy" && <CopyManager categories={categories} />}
       {tab === "categories" && <CategoryManager categories={categories} />}
       {tab === "feedbacks" && <FeedbackManager />}
+      {tab === "announcements" && <AnnouncementManager />}
       {tab === "ai-review" && <AIReviewManager />}
       {tab === "settings" && <SiteSettingsManager />}
     </div>

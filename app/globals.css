@@ -143,68 +143,151 @@
   }
 }
 
-/* ---------- 霓虹彩蛋主题（大胆搞怪） ---------- */
+/* ---------- 霓虹彩蛋主题 v2：街机像素风（大胆搞怪） ----------
+   灵感：复古 8-bit 街机厅 —— 深蓝黑底 + 像素网格 + 滚动扫描线
+   + 标题 glitch 花屏 + 青色/品红/荧光黄撞色。
+   全部动效只用 background-position / text-shadow / opacity，
+   ⚠️ 不要给 body 加 filter/transform 动画（会破坏 fixed 定位，
+   侧栏底部 UI 会"跑丢"——历史 bug，勿复踩）。 */
 html[data-theme="neon"] {
-  --background: oklch(0.13 0.06 310);
-  --foreground: oklch(0.92 0.12 340);
-  --card: oklch(0.17 0.08 300);
-  --card-foreground: oklch(0.92 0.12 340);
-  --popover: oklch(0.17 0.08 300);
-  --popover-foreground: oklch(0.92 0.12 340);
-  --primary: oklch(0.78 0.18 160);
-  --primary-foreground: oklch(0.13 0.06 310);
-  --secondary: oklch(0.25 0.1 290);
-  --secondary-foreground: oklch(0.85 0.15 330);
-  --muted: oklch(0.22 0.09 295);
-  --muted-foreground: oklch(0.68 0.13 335);
-  --accent: oklch(0.28 0.12 305);
-  --accent-foreground: oklch(0.9 0.13 345);
-  --destructive: oklch(0.65 0.24 25);
-  --border: oklch(0.35 0.13 320);
-  --input: oklch(0.35 0.13 320);
-  --ring: oklch(0.78 0.18 160);
-  --chart-1: oklch(0.78 0.18 160);
-  --chart-2: oklch(0.75 0.2 330);
-  --chart-3: oklch(0.7 0.18 260);
-  --chart-4: oklch(0.8 0.16 60);
-  --chart-5: oklch(0.82 0.14 190);
-  --sidebar: oklch(0.15 0.07 305);
-  --sidebar-foreground: oklch(0.9 0.12 340);
-  --sidebar-primary: oklch(0.78 0.18 160);
-  --sidebar-primary-foreground: oklch(0.13 0.06 310);
-  --sidebar-accent: oklch(0.26 0.11 300);
-  --sidebar-accent-foreground: oklch(0.9 0.13 345);
-  --sidebar-border: oklch(0.33 0.12 315);
-  --sidebar-ring: oklch(0.78 0.18 160);
+  --background: oklch(0.13 0.07 265);        /* 街机厅深蓝黑 */
+  --foreground: oklch(0.92 0.16 175);        /* 霓虹青绿 CRT 字 */
+  --card: oklch(0.18 0.07 268);
+  --card-foreground: oklch(0.92 0.16 175);
+  --popover: oklch(0.18 0.07 268);
+  --popover-foreground: oklch(0.92 0.16 175);
+  --primary: oklch(0.78 0.2 165);            /* 霓虹青 */
+  --primary-foreground: oklch(0.13 0.07 265);
+  --secondary: oklch(0.62 0.25 330);         /* 品红 */
+  --secondary-foreground: oklch(0.14 0.07 265);
+  --muted: oklch(0.22 0.06 272);
+  --muted-foreground: oklch(0.72 0.14 190);  /* 淡青灰 */
+  --accent: oklch(0.87 0.19 100);            /* 荧光黄 */
+  --accent-foreground: oklch(0.13 0.07 265);
+  --destructive: oklch(0.66 0.24 25);
+  --border: oklch(0.38 0.11 285);
+  --input: oklch(0.38 0.11 285);
+  --ring: oklch(0.78 0.2 165);
+  --chart-1: oklch(0.78 0.2 165);
+  --chart-2: oklch(0.65 0.25 330);
+  --chart-3: oklch(0.87 0.19 100);
+  --chart-4: oklch(0.55 0.2 235);
+  --chart-5: oklch(0.8 0.15 40);
+  --sidebar: oklch(0.16 0.08 268);
+  --sidebar-foreground: oklch(0.9 0.15 178);
+  --sidebar-primary: oklch(0.78 0.2 165);
+  --sidebar-primary-foreground: oklch(0.13 0.07 265);
+  --sidebar-accent: oklch(0.26 0.1 280);
+  --sidebar-accent-foreground: oklch(0.92 0.16 175);
+  --sidebar-border: oklch(0.36 0.12 288);
+  --sidebar-ring: oklch(0.78 0.2 165);
   color-scheme: dark;
 }
 
-/* 霓虹背景：只用 background-position 动画。
-   ⚠️ 不要给 body 加 filter/transform 动画：filter 会让 body 成为
-   fixed 定位元素的包含块，侧栏/弹层（position: fixed）将不再相对视口，
-   滚动后侧栏底部（主题切换、用户登录）会"跑丢"（历史 bug）。 */
 html[data-theme="neon"] body {
+  /* 三层：青网格 + 品红网格（错位产生像素抖动）+ 扫描线 + 底色 */
   background:
-    radial-gradient(1200px 600px at 10% -10%, oklch(0.4 0.2 300 / 0.35), transparent 60%),
-    radial-gradient(1000px 500px at 110% 20%, oklch(0.45 0.2 180 / 0.3), transparent 55%),
-    radial-gradient(900px 600px at 50% 120%, oklch(0.45 0.22 340 / 0.28), transparent 60%),
+    linear-gradient(rgba(0, 240, 255, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 0, 170, 0.09) 1px, transparent 1px),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 3px,
+      rgba(0, 0, 0, 0.22) 3px,
+      rgba(0, 0, 0, 0.22) 4px
+    ),
     var(--background);
-  background-size: 200% 200%;
+  background-size:
+    26px 26px,
+    26px 26px,
+    100% 4px,
+    auto;
   background-attachment: fixed;
-  animation: neon-aurora 18s ease-in-out infinite alternate;
+  /* 网格缓慢游走 + 扫描线滚动，像老式街机屏幕 */
+  animation: neon-crt 10s steps(4) infinite;
 }
 
-@keyframes neon-aurora {
-  from { background-position: 0% 0%; }
-  to { background-position: 100% 100%; }
+@keyframes neon-crt {
+  0%   { background-position: 0 0, 0 0, 0 0, 0 0; }
+  25%  { background-position: 13px 13px, -13px 13px, 0 0, 0 0; }
+  50%  { background-position: 26px 0, 0 26px, 0 0, 0 0; }
+  75%  { background-position: 13px -13px, 13px 13px, 0 0, 0 0; }
+  100% { background-position: 0 0, 0 0, 0 4px, 0 0; }
 }
 
+/* 标题 glitch 花屏：红/青错位 + 荧光 */
 html[data-theme="neon"] h1,
 html[data-theme="neon"] h2,
 html[data-theme="neon"] h3 {
-  text-shadow: 0 0 8px oklch(0.78 0.18 160 / 0.5), 0 0 24px oklch(0.75 0.2 330 / 0.35);
+  animation: neon-glitch 2.6s steps(2) infinite;
+}
+
+@keyframes neon-glitch {
+  0%, 100% {
+    text-shadow:
+      2px 0 rgba(255, 0, 170, 0.75),
+      -2px 0 rgba(0, 240, 255, 0.75),
+      0 0 14px rgba(255, 0, 170, 0.3);
+  }
+  33% {
+    text-shadow:
+      -3px 0 rgba(0, 240, 255, 0.9),
+      3px 0 rgba(255, 0, 170, 0.9),
+      0 0 20px rgba(255, 238, 0, 0.35);
+  }
+  66% {
+    text-shadow:
+      1px 0 rgba(255, 238, 0, 0.85),
+      -1px 0 rgba(0, 240, 255, 0.85),
+      0 0 18px rgba(0, 240, 255, 0.4);
+  }
 }
 
 html[data-theme="neon"] a {
-  text-shadow: 0 0 6px oklch(0.8 0.16 60 / 0.25);
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.25);
+}
+
+/* 霓虹下按钮主色翻转：hover 变荧光黄，更"街机" */
+html[data-theme="neon"] [data-slot="button"]:not([data-variant]) {
+  transition: background-color 150ms, color 150ms, box-shadow 150ms;
+}
+html[data-theme="neon"] [data-slot="button"]:not([data-variant]):hover {
+  background-color: oklch(0.87 0.19 100);
+  color: oklch(0.13 0.07 265);
+  box-shadow: 0 0 18px rgba(255, 238, 0, 0.45);
+}
+
+/* 霓虹下卡片边框发光 */
+html[data-theme="neon"] [data-slot="card"] {
+  box-shadow: 0 0 0 1px rgba(0, 240, 255, 0.18), 0 8px 24px -12px rgba(255, 0, 170, 0.35);
+}
+
+/* ---------- 收藏开关动效 ---------- */
+/* 收藏图标切换时弹跳+点亮；配合 data-fav 的颜色填充 */
+@keyframes fav-pop {
+  0%   { transform: scale(0); }
+  55%  { transform: scale(1.35); }
+  75%  { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+.fav-pop {
+  animation: fav-pop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 取消收藏时的收缩淡出（反向） */
+@keyframes fav-shrink {
+  from { transform: scale(1); opacity: 1; }
+  to   { transform: scale(0); opacity: 0.2; }
+}
+
+.fav-shrink {
+  animation: fav-shrink 0.2s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fav-pop,
+  .fav-shrink {
+    animation: none;
+  }
 }

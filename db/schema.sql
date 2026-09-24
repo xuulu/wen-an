@@ -104,6 +104,30 @@ COMMENT ON COLUMN wenan_feedbacks.admin_reply IS '管理员回复内容';
 COMMENT ON COLUMN wenan_feedbacks.status IS '处理状态：pending 待处理 / replied 已回复 / closed 已关闭';
 
 -- -------------------------------------------------------------
+-- 5b. 公告表（公告系统：管理员发布，用户可读）
+-- -------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS wenan_announcements (
+  id          BIGSERIAL PRIMARY KEY,
+  title       VARCHAR(200) NOT NULL,
+  content     TEXT NOT NULL,
+  is_hidden   BOOLEAN NOT NULL DEFAULT FALSE,
+  is_pinned   BOOLEAN NOT NULL DEFAULT FALSE,
+  created_by  BIGINT NULL REFERENCES wenan_users(id) ON DELETE SET NULL,
+  created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+COMMENT ON TABLE  wenan_announcements IS '站务公告（公告系统）';
+COMMENT ON COLUMN wenan_announcements.title IS '公告标题';
+COMMENT ON COLUMN wenan_announcements.content IS '公告正文';
+COMMENT ON COLUMN wenan_announcements.is_hidden IS '是否隐藏（软隐藏，不展示但保留数据）';
+COMMENT ON COLUMN wenan_announcements.is_pinned IS '是否置顶（置顶优先展示）';
+COMMENT ON COLUMN wenan_announcements.created_by IS '发布管理员（关联 wenan_users）';
+
+CREATE INDEX IF NOT EXISTS idx_announcements_list
+  ON wenan_announcements (is_hidden, is_pinned DESC, created_at DESC);
+
+-- -------------------------------------------------------------
 -- 6. 站点设置表（键值：基本信息/SEO/页脚/审核/AI）
 -- -------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS wenan_site_settings (

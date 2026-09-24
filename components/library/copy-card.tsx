@@ -40,11 +40,19 @@ export function CopyCard({
   onToggleFavorite,
 }: CopyCardProps) {
   const [copied, setCopied] = useState(false);
+  const [favAnim, setFavAnim] = useState<"pop" | "shrink" | null>(null);
 
   async function handleCopy() {
     await copyText(item.content);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1500);
+  }
+
+  function handleFavClick() {
+    // 开：弹跳点亮；关：收缩淡出
+    setFavAnim(item.favorite ? "shrink" : "pop");
+    window.setTimeout(() => setFavAnim(null), 420);
+    onToggleFavorite(item.id);
   }
 
   return (
@@ -75,14 +83,12 @@ export function CopyCard({
           aria-label={item.favorite ? "取消收藏" : "收藏"}
           className="size-7 shrink-0 text-muted-foreground/60 hover:text-foreground data-[fav=true]:text-amber-500"
           data-fav={item.favorite}
-          onClick={() => onToggleFavorite(item.id)}
+          onClick={handleFavClick}
         >
           <Star
-            className={
-              item.favorite
-                ? "size-4 fill-amber-400 text-amber-400"
-                : "size-4"
-            }
+            className={`size-4 ${
+              item.favorite ? "fill-amber-400 text-amber-400" : ""
+            } ${favAnim === "pop" ? "fav-pop" : favAnim === "shrink" ? "fav-shrink" : ""}`}
           />
         </Button>
       </div>

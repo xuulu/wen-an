@@ -25,7 +25,7 @@ nginx -t && systemctl reload nginx
 | `/` 及所有页面路由 | 页面（App Router 动态渲染） | 转发 `127.0.0.1:3000` |
 | `/_next/static/` | Next.js 构建静态产物 | 转发 + 1 年 immutable 缓存 |
 | `/_next/image` | Next.js 内置图片优化 | 转发 + 24h 缓存 |
-| `/api/*` | 业务 API（含注册/登录/投稿/限流） | 转发，透传真实 IP（X-Forwarded-For） |
+| `/api/*` | 业务 API（含注册/登录/投稿/限流/公告 `GET /api/announcements`、管理端 `GET|POST /api/admin/announcements`、`PUT|DELETE /api/admin/announcements/[id]`） | 转发，透传真实 IP（X-Forwarded-For） |
 | `/sitemap.xml` | 动态生成（每日 revalidate） | 转发 + 86400 缓存 |
 | `/robots.txt` | 动态生成 | 转发 + 86400 缓存 |
 | WebSocket / SSE | 预留（当前无服务） | 见配置内 `location /` 的 upgrade 模板 |

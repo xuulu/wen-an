@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Copy, RefreshCw, Sparkles, Star } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ export function DailyRecommend({
   );
   const [copied, setCopied] = useState(false);
   const [spinning, setSpinning] = useState(false);
+  const [favAnim, setFavAnim] = useState<"pop" | "shrink" | null>(null);
 
   const category = recommended
     ? categories.find((c) => c.id === recommended.categoryId)
@@ -80,6 +82,14 @@ export function DailyRecommend({
     window.setTimeout(() => setCopied(false), 1500);
   }
 
+  function handleFavClick() {
+    if (!recommended) return;
+    const isFav = favoriteIds.has(recommended.id);
+    setFavAnim(isFav ? "shrink" : "pop");
+    window.setTimeout(() => setFavAnim(null), 420);
+    onToggleFavorite(recommended.id);
+  }
+
   if (!recommended) return null;
 
   return (
@@ -93,7 +103,12 @@ export function DailyRecommend({
           <div className="flex items-center gap-2">
             <span className="shrink-0 text-xs font-semibold">每日推荐</span>
             <h3 className="min-w-0 truncate text-sm font-medium">
-              {recommended.title}
+              <Link
+                href={`/copy/${recommended.id}`}
+                className="rounded-sm outline-none transition-colors hover:text-foreground/70 focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {recommended.title}
+              </Link>
             </h3>
             {style && (
               <span
@@ -127,14 +142,20 @@ export function DailyRecommend({
             aria-label={
               favoriteIds.has(recommended.id) ? "取消收藏" : "收藏"
             }
-            onClick={() => onToggleFavorite(recommended.id)}
+            onClick={handleFavClick}
           >
             <Star
-              className={
+              className={`${
                 favoriteIds.has(recommended.id)
                   ? "fill-amber-400 text-amber-400"
-                  : undefined
-              }
+                  : ""
+              } ${
+                favAnim === "pop"
+                  ? "fav-pop"
+                  : favAnim === "shrink"
+                    ? "fav-shrink"
+                    : ""
+              }`}
             />
           </Button>
           <Button

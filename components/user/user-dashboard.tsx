@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 import { FavoritesPanel } from "@/components/user/favorites-panel";
-import { FeedbacksPanel } from "@/components/user/feedbacks-panel";
+import { FeedbackCenter } from "@/components/user/feedback-center";
 import { SettingsPanel } from "@/components/user/settings-panel";
 import { SubmissionsPanel } from "@/components/user/submissions-panel";
 import { Button } from "@/components/ui/button";
@@ -102,7 +102,7 @@ export function UserDashboard({
       <section className="mt-4">
         {tab === "favorites" && <FavoritesPanel />}
         {tab === "submissions" && <SubmissionsPanel categories={categories} />}
-        {tab === "feedbacks" && <FeedbacksPanel />}
+        {tab === "feedbacks" && <FeedbackCenter />}
         {tab === "settings" && <SettingsPanel nickname={nickname} />}
       </section>
     </main>
