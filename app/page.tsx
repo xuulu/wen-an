@@ -22,8 +22,13 @@ function pickDailyRecommend(items: CopyItem[]): CopyItem | null {
   return items[dayOfYear % items.length];
 }
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   const user = await getCurrentUser();
+  const { q } = await searchParams;
 
   const [categories, { items }, hotItems] = await Promise.all([
     getCategories(),
@@ -42,6 +47,7 @@ export default async function Home() {
       userNickname={user?.nickname ?? ""}
       hotItems={hotItems}
       seed={randomUUID().split("-").reduce((acc, part) => (acc ^ parseInt(part, 16)) >>> 0, 0)}
+      initialQuery={q ?? ""}
       footer={<SiteFooter />}
     />
   );

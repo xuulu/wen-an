@@ -32,6 +32,8 @@ interface LibraryShellProps {
   seed: number;
   /** 进入时默认选中的分类（/category/[id] 页传入；首页为 all） */
   initialCategoryId?: string;
+  /** 初始搜索词（来自 URL ?q=，如 404 页搜索框跳转） */
+  initialQuery?: string;
   /** 页脚（服务端组件，由页面传入） */
   footer?: React.ReactNode;
 }
@@ -110,6 +112,7 @@ export function LibraryShell({
   hotItems,
   seed,
   initialCategoryId = "all",
+  initialQuery = "",
   footer,
 }: LibraryShellProps) {
   const router = useRouter();
@@ -117,7 +120,7 @@ export function LibraryShell({
   // 路由标识：客户端 Link 在分类页之间跳转时组件实例不会重建，
   // 通过 render 阶段比对把外部 prop 变化同步进 state（不用 effect，避免 setState-in-effect）
   const [routeCategory, setRouteCategory] = useState(initialCategoryId);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [page, setPage] = useState(1);
   const [newSheetOpen, setNewSheetOpen] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
@@ -132,6 +135,10 @@ export function LibraryShell({
     setActiveId(initialCategoryId);
     setHotFilterId(null);
     setPage(1);
+  }
+  // URL 搜索词同步：404 页搜索框跳转 /?q= 后，把服务端传来的初始词同步进 state
+  if (routeCategory === initialCategoryId && initialQuery && query !== initialQuery) {
+    setQuery(initialQuery);
   }
 
   const categoryMap = useMemo(
@@ -297,9 +304,15 @@ export function LibraryShell({
               <Input
                 value={query}
                 onChange={(event) => {
-                  setQuery(event.target.value);
+                  const value = event.target.value;
+                  setQuery(value);
                   setHotFilterId(null);
                   setPage(1);
+                  // 同步 URL（不触发导航）：404 搜索框提交到 /?q= 后，地址栏与输入一致
+                  const url = new URL(window.location.href);
+                  if (value) url.searchParams.set("q", value);
+                  else url.searchParams.delete("q");
+                  window.history.replaceState(null, "", url.toString());
                 }}
                 placeholder="搜索标题或内容…"
                 className="h-9 pl-8"
