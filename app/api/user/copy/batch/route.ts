@@ -114,7 +114,6 @@ export async function POST(request: Request) {
           title: item.title.trim(),
           content,
           categoryId,
-          tags: item.tags ?? [],
         },
         { userId: user.id, status: "pending", createdAtRaw: item.createdAt }
       );

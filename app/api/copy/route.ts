@@ -3,7 +3,7 @@ import { getAdminUser, getCurrentUser } from "@/lib/auth";
 import { createCopyItem, getCopyItems } from "@/lib/copywriting-data";
 import type { CopyStatus } from "@/lib/copywriting";
 
-/** 公开：分页获取文案列表，支持关键词搜索（标题/正文/类目/标签） */
+/** 公开：分页获取文案列表，支持关键词搜索（标题/正文/类目） */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
@@ -53,15 +53,11 @@ export async function POST(request: Request) {
     title?: string;
     content?: string;
     categoryId?: string;
-    tags?: unknown;
   } | null;
 
   const title = body?.title?.trim();
   const content = body?.content?.trim();
   const categoryId = body?.categoryId;
-  const tags = Array.isArray(body?.tags)
-    ? body.tags.filter((t): t is string => typeof t === "string")
-    : [];
 
   if (!title || !content || !categoryId) {
     return NextResponse.json(
@@ -70,6 +66,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const item = await createCopyItem({ title, content, categoryId, tags });
+  const item = await createCopyItem({ title, content, categoryId });
   return NextResponse.json(item, { status: 201 });
 }

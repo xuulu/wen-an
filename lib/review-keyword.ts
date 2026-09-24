@@ -7,9 +7,9 @@ export interface KeywordReviewResult {
   hitKeyword: string;
 }
 
-/** 关键词审核：命中屏蔽词即拒绝（标题+正文+标签统一检查） */
+/** 关键词审核：命中屏蔽词即拒绝（标题+正文统一检查） */
 export async function reviewByKeywords(
-  item: { title: string; content: string; tags?: string[] }
+  item: { title: string; content: string }
 ): Promise<KeywordReviewResult> {
   const settings = await getSiteSettings();
   if (settings.review_keyword_enabled !== "true") {
@@ -21,7 +21,7 @@ export async function reviewByKeywords(
     .map((word) => word.trim())
     .filter(Boolean);
 
-  const haystack = `${item.title}\n${item.content}\n${(item.tags ?? []).join(",")}`;
+  const haystack = `${item.title}\n${item.content}`;
   const hit = blocked.find((word) => haystack.includes(word));
   return hit ? { passed: false, hitKeyword: hit } : { passed: true, hitKeyword: "" };
 }

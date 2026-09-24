@@ -41,12 +41,12 @@ interface BatchResult {
   errors: { index: number; error: string }[];
 }
 
-const TXT_SAMPLE = `春节祝福|辞旧迎新岁，万事皆可期。祝你新春快乐！|春节,祝福|2026-02-10
+const TXT_SAMPLE = `春节祝福|辞旧迎新岁，万事皆可期。祝你新春快乐！|2026-02-10
 周末随笔|慢下来的日子，每一秒都在发光。
-时间戳示例|这条文案用 Unix 时间戳作为创建时间。|测试|1739145600`;
+时间戳示例|这条文案用 Unix 时间戳作为创建时间。|1739145600`;
 
 const JSON_SAMPLE = `[
-  { "title": "春节祝福", "content": "辞旧迎新岁，万事皆可期。祝你新春快乐！", "tags": ["春节","祝福"], "createdAt": "2026-02-10" },
+  { "title": "春节祝福", "content": "辞旧迎新岁，万事皆可期。祝你新春快乐！", "createdAt": "2026-02-10" },
   { "title": "周末随笔", "content": "慢下来的日子，每一秒都在发光。" }
 ]`;
 
@@ -252,12 +252,12 @@ export function BatchImportSheet({
                   <p className="font-medium text-foreground">txt 格式</p>
                   <p className="mt-1">
                     每行一条，字段以 <code>|</code> 分隔，顺序：
-                    <code>标题|正文|标签(可选)|创建时间(可选)</code>
+                    <code>标题|正文|创建时间(可选)</code>
                   </p>
                   <p className="mt-1">
-                    标签用英文/中文逗号分隔多个；创建时间支持
-                    YYYY-MM-DD（月日可省略前导零）或 Unix 时间戳（10 位秒 /
-                    13 位毫秒）。
+                    创建时间支持 YYYY-MM-DD（月日可省略前导零）或 Unix
+                    时间戳（10 位秒 / 13 位毫秒）。兼容旧格式「标题|正文|标签|时间」，
+                    标签字段会被忽略。
                   </p>
                   <pre className="mt-1 overflow-x-auto rounded bg-background p-2 text-[11px] leading-relaxed">
 {TXT_SAMPLE}
@@ -267,7 +267,7 @@ export function BatchImportSheet({
                   <p className="font-medium text-foreground">JSON 格式</p>
                   <p className="mt-1">
                     数组形式，每项含 <code>title</code>、<code>content</code>，
-                    可选 <code>tags</code>、<code>createdAt</code>。
+                    可选 <code>createdAt</code>。
                   </p>
                   <pre className="mt-1 overflow-x-auto rounded bg-background p-2 text-[11px] leading-relaxed">
 {JSON_SAMPLE}
@@ -277,7 +277,7 @@ export function BatchImportSheet({
                   {mode === "admin"
                     ? "管理员导入无条数限制；"
                     : "用户单次最多 500 条；"}
-                  标题 1-80 字；正文 5-5000 字；标签每个最多 20 字、最多 10 个。
+                  标题 1-80 字；正文 5-5000 字。
                 </p>
               </div>
             </details>
@@ -339,11 +339,6 @@ function ParsedPreview({
             <span className="min-w-0 flex-1 truncate font-medium">
               {item.title}
             </span>
-            {item.tags.length > 0 && (
-              <span className="shrink-0 text-muted-foreground">
-                {item.tags.join("/")}
-              </span>
-            )}
             {item.createdAt && (
               <span className="shrink-0 text-muted-foreground">
                 {item.createdAt}

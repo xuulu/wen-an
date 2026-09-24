@@ -155,8 +155,7 @@ export function LibraryShell({
     const matchesKeyword = (item: CopyItem) =>
       !keyword ||
       item.title.toLowerCase().includes(keyword) ||
-      item.content.toLowerCase().includes(keyword) ||
-      item.tags.some((tag) => tag.toLowerCase().includes(keyword));
+      item.content.toLowerCase().includes(keyword);
 
     return localItems.filter((item) => {
       // 热门过滤是显式的单条定位，优先于分类/收藏限制
@@ -302,7 +301,7 @@ export function LibraryShell({
                   setHotFilterId(null);
                   setPage(1);
                 }}
-                placeholder="搜索标题、内容或标签…"
+                placeholder="搜索标题或内容…"
                 className="h-9 pl-8"
               />
             </div>

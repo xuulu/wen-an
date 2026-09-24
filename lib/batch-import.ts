@@ -2,7 +2,6 @@
 export interface ParsedCopyInput {
   title: string;
   content: string;
-  tags: string[];
   createdAt?: string;
 }
 
@@ -18,8 +17,6 @@ export interface ParseResult {
 export const TITLE_MAX = 80;
 export const CONTENT_MIN = 5;
 export const CONTENT_MAX = 5000;
-export const TAG_MAX_COUNT = 10;
-export const TAG_MAX_LEN = 20;
 
 const DATE_RE = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
 
@@ -74,19 +71,8 @@ function formatDateParts(d: Date): string {
 }
 
 /**
- * 切分 txt 标签字段：英文逗号 / 中文逗号均可
- * 空字符串返回空数组
+ * 校验单条，返回错误信息（无错误返回 null）
  */
-function parseTags(raw: string): string[] {
-  const trimmed = raw.trim();
-  if (!trimmed) return [];
-  return trimmed
-    .split(/[,，]/)
-    .map((t) => t.trim())
-    .filter((t) => t.length > 0);
-}
-
-/** 校验单条，返回错误信息（无错误返回 null） */
 export function validateBatchItem(
   item: ParsedCopyInput,
   index: number
@@ -103,14 +89,6 @@ export function validateBatchItem(
   if (content.length > CONTENT_MAX)
     return `${where}正文超过 ${CONTENT_MAX} 字`;
 
-  const tags = item.tags ?? [];
-  if (tags.length > TAG_MAX_COUNT)
-    return `${where}标签超过 ${TAG_MAX_COUNT} 个`;
-  for (const tag of tags) {
-    if (typeof tag !== "string" || tag.length === 0 || tag.length > TAG_MAX_LEN)
-      return `${where}标签长度须在 1-${TAG_MAX_LEN} 字`;
-  }
-
   if (item.createdAt !== undefined && normalizeDate(item.createdAt) === null)
     return `${where}时间格式错误，支持 YYYY-MM-DD 或 Unix 时间戳`;
 
@@ -119,8 +97,11 @@ export function validateBatchItem(
 
 /**
  * 解析批量导入输入文本，自动识别 json / txt 格式。
- * - json：顶层必须是数组（单个对象自动包装），每项需含 title/content（string），tags/createdAt 可选
- * - txt：每行一条，字段以 | 分隔，顺序 标题|正文|标签(逗号,可选)|创建时间(可选)
+ * - json：顶层必须是数组（单个对象自动包装），每项需含 title/content（string），createdAt 可选；
+ *         旧格式的 tags 字段会被忽略（不再校验、不再存储）
+ * - txt：每行一条，字段以 | 分隔，顺序 标题|正文|创建时间(可选)。
+ *         兼容旧格式「标题|正文|标签|创建时间」：标签字段（第 3 列）被忽略，
+ *         若第 3 列不是合法日期且第 4 列是，则取第 4 列为创建时间。
  * - 对每条做校验；只要有任何一条解析或校验失败，整批拒绝（items 返回空）
  * - 条数无上限
  */
@@ -174,14 +155,9 @@ export function parseBatchInput(rawText: string): ParseResult {
       const r = row as Record<string, unknown>;
       const title = typeof r.title === "string" ? r.title : "";
       const content = typeof r.content === "string" ? r.content : "";
-      const tags = Array.isArray(r.tags)
-        ? r.tags.filter(
-            (t): t is string => typeof t === "string" && t.length > 0
-          )
-        : [];
       const createdAt =
         typeof r.createdAt === "string" ? r.createdAt : undefined;
-      parsed.push({ title, content, tags, createdAt });
+      parsed.push({ title, content, createdAt });
     }
   } else {
     const lines = text.split(/\r?\n/);
@@ -193,14 +169,18 @@ export function parseBatchInput(rawText: string): ParseResult {
         errors.push(`第 ${i + 1} 行字段不足，至少需要「标题|正文」`);
         continue;
       }
-      const [title, content, tagsRaw, createdAtRaw] = fields;
+      const [title, content, maybeDate, maybeOldTagDate] = fields;
       const item: ParsedCopyInput = {
         title: title ?? "",
         content: content ?? "",
-        tags: parseTags(tagsRaw ?? ""),
       };
-      if (createdAtRaw && createdAtRaw.length > 0) {
-        item.createdAt = createdAtRaw;
+      // 优先第 3 列为创建时间；若它不是合法日期而第 4 列是（旧「标签|日期」格式），取第 4 列
+      const third = maybeDate ?? "";
+      const fourth = maybeOldTagDate ?? "";
+      if (third && normalizeDate(third) !== null) {
+        item.createdAt = third;
+      } else if (fourth && normalizeDate(fourth) !== null) {
+        item.createdAt = fourth;
       }
       parsed.push(item);
     }

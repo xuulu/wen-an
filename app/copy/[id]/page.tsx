@@ -67,7 +67,6 @@ export default async function CopyPage({ params }: CopyPageProps) {
         ...(siteUrl ? { url: `${siteUrl}/copy/${id}` } : {}),
         datePublished: item.updatedAt,
         dateModified: item.updatedAt,
-        keywords: item.tags.join(","),
         articleSection: category?.label,
       },
       {
@@ -173,14 +172,6 @@ export default async function CopyPage({ params }: CopyPageProps) {
             <div className="mt-6 whitespace-pre-wrap text-[15px] leading-loose text-foreground/90">
               {item.content}
             </div>
-
-            {item.tags.length > 0 && (
-              <div className="mt-6 flex flex-wrap gap-x-3 font-mono text-xs text-muted-foreground/80">
-                {item.tags.map((tag) => (
-                  <span key={tag}>#{tag}</span>
-                ))}
-              </div>
-            )}
 
             <div className="mt-8 border-t pt-6">
               <CopyDetailActions

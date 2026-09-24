@@ -23,7 +23,6 @@ interface ChatCompletionResponse {
 export async function reviewByAI(item: {
   title: string;
   content: string;
-  tags?: string[];
 }): Promise<AIReviewResult> {
   const settings = await getSiteSettings();
   if (settings.review_ai_enabled !== "true") {
@@ -47,7 +46,7 @@ export async function reviewByAI(item: {
           { role: "system", content: settings.ai_review_prompt },
           {
             role: "user",
-            content: `标题：${item.title}\n正文：${item.content}\n标签：${(item.tags ?? []).join("、") || "无"}`,
+            content: `标题：${item.title}\n正文：${item.content}`,
           },
         ],
         temperature: 0,

@@ -59,15 +59,11 @@ export async function PUT(
     title?: string;
     content?: string;
     categoryId?: string;
-    tags?: unknown;
   } | null;
 
   const title = body?.title?.trim();
   const content = body?.content?.trim();
   const categoryId = body?.categoryId;
-  const tags = Array.isArray(body?.tags)
-    ? body.tags.filter((t): t is string => typeof t === "string")
-    : [];
 
   if (!title || !content || !categoryId) {
     return NextResponse.json(
@@ -76,7 +72,7 @@ export async function PUT(
     );
   }
 
-  const item = await updateCopyItem(id, { title, content, categoryId, tags });
+  const item = await updateCopyItem(id, { title, content, categoryId });
   if (!item) {
     return NextResponse.json({ error: "文案不存在" }, { status: 404 });
   }

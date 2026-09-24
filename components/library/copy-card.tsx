@@ -102,13 +102,11 @@ export function CopyCard({
         {item.content}
       </p>
 
-      {/* 底部：标签 + 复制 */}
+      {/* 底部：复制 */}
       <div className="mt-auto flex items-center justify-between gap-3 pt-5">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[11px] text-muted-foreground/80">
-          {item.tags.slice(0, 3).map((tag) => (
-            <span key={tag}>#{tag}</span>
-          ))}
-        </div>
+        <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-muted-foreground/60">
+          {item.updatedAt}
+        </span>
         <Button
           variant="outline"
           size="sm"

@@ -21,7 +21,6 @@ interface CopyItemRow {
   title: string;
   content: string;
   category_id: number;
-  tags: string[];
   status: CopyStatus;
   updated_at: Date | string;
   is_favorite: boolean;
@@ -44,7 +43,7 @@ export interface CopyItemsOptions {
   /** 收藏归属的用户 id；0 表示未登录（无收藏状态） */
   userId?: number;
   pagination?: Pagination;
-  /** 模糊搜索：标题、正文、类目名、标签 */
+  /** 模糊搜索：标题、正文、类目名 */
   search?: string;
   /** "all" 不过滤（管理员）；默认只看 approved */
   status?: "all" | CopyStatus;
@@ -151,7 +150,7 @@ export async function deleteCategory(
 
 /**
  * 获取文案列表（带分页、模糊搜索、状态过滤与总数）
- * 模糊搜索范围：标题、正文、类目名、标签
+ * 模糊搜索范围：标题、正文、类目名
  */
 export async function getCopyItems(
   options: CopyItemsOptions = {}
@@ -209,7 +208,6 @@ export async function getCopyItems(
         c.title ILIKE ${p}
         OR c.content ILIKE ${p}
         OR cat.label ILIKE ${p}
-        OR EXISTS (SELECT 1 FROM unnest(c.tags) tg WHERE tg ILIKE ${p})
       )
     `);
   }
@@ -247,7 +245,6 @@ export async function getCopyItems(
         c.title ILIKE ${p}
         OR c.content ILIKE ${p}
         OR cat.label ILIKE ${p}
-        OR EXISTS (SELECT 1 FROM unnest(c.tags) tg WHERE tg ILIKE ${p})
       )
     `);
   }
@@ -281,7 +278,6 @@ export async function getCopyItems(
       c.title,
       c.content,
       c.category_id,
-      c.tags,
       c.status,
       c.updated_at,
       c.review_reason,
@@ -304,7 +300,6 @@ export async function getCopyItems(
       title: row.title,
       content: row.content,
       categoryId: String(row.category_id),
-      tags: row.tags,
       favorite: row.is_favorite,
       status: row.status,
       updatedAt: formatDate(row.updated_at),
@@ -322,7 +317,7 @@ export async function getCopyItemById(
   const { rows } = await query<CopyItemRow>(
     `
       SELECT
-        c.id, c.title, c.content, c.category_id, c.tags, c.status, c.updated_at,
+        c.id, c.title, c.content, c.category_id, c.status, c.updated_at,
         c.review_reason,
         EXISTS (
           SELECT 1 FROM wenan_user_favorites f
@@ -340,7 +335,6 @@ export async function getCopyItemById(
     title: row.title,
     content: row.content,
     categoryId: String(row.category_id),
-    tags: row.tags,
     favorite: row.is_favorite,
     status: row.status,
     updatedAt: formatDate(row.updated_at),
@@ -359,7 +353,6 @@ export async function createCopyItem(
     title: string;
     content: string;
     categoryId: string;
-    tags: string[];
   },
   opts: {
     userId?: number | null;
@@ -371,14 +364,13 @@ export async function createCopyItem(
   const createdAt = createdAtRaw ? normalizeDate(createdAtRaw) : null;
   const { rows } = await query<{ id: number }>(
     `INSERT INTO wenan_copy_items
-       (title, content, category_id, tags, user_id, status, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7::date, CURRENT_DATE))
+       (title, content, category_id, user_id, status, updated_at)
+     VALUES ($1, $2, $3, $4, $5, COALESCE($6::date, CURRENT_DATE))
      RETURNING id`,
     [
       data.title,
       data.content,
       Number(data.categoryId),
-      data.tags,
       userId,
       status,
       createdAt ?? null,
@@ -408,7 +400,7 @@ export async function setCopyItemStatus(
 /** 取所有待审核文案（一键审核/定时审核用） */
 export async function getPendingCopyItems(): Promise<CopyItem[]> {
   const { rows } = await query<CopyItemRow>(
-    `SELECT id, title, content, category_id, tags, status, updated_at,
+    `SELECT id, title, content, category_id, status, updated_at,
             FALSE AS is_favorite
      FROM wenan_copy_items
      WHERE status = 'pending'
@@ -419,7 +411,6 @@ export async function getPendingCopyItems(): Promise<CopyItem[]> {
     title: row.title,
     content: row.content,
     categoryId: String(row.category_id),
-    tags: row.tags,
     favorite: false,
     status: row.status,
     updatedAt: formatDate(row.updated_at),
@@ -448,14 +439,13 @@ export async function updateCopyItem(
     title: string;
     content: string;
     categoryId: string;
-    tags: string[];
   }
 ): Promise<CopyItem | null> {
   const { rowCount } = await query(
     `UPDATE wenan_copy_items
-     SET title = $1, content = $2, category_id = $3, tags = $4, updated_at = CURRENT_DATE
-     WHERE id = $5`,
-    [data.title, data.content, Number(data.categoryId), data.tags, Number(id)]
+     SET title = $1, content = $2, category_id = $3, updated_at = CURRENT_DATE
+     WHERE id = $4`,
+    [data.title, data.content, Number(data.categoryId), Number(id)]
   );
   if ((rowCount ?? 0) === 0) return null;
   return getCopyItemById(id);
@@ -490,7 +480,6 @@ interface MyCopyRow {
   category_id: number;
   category_label: string;
   category_color: string;
-  tags: string[];
   status: CopyStatus;
   updated_at: Date | string;
   review_reason: string;
@@ -510,7 +499,6 @@ function mapMyRow(row: MyCopyRow): MyCopyItem {
     categoryId: String(row.category_id),
     categoryLabel: row.category_label,
     categoryColor: normalizeCategoryColor(row.category_color),
-    tags: row.tags,
     // 自己的收藏/投稿在用户后台里 favorite 无实际意义，默认 true 即可
     favorite: true,
     status: row.status,
@@ -535,7 +523,7 @@ export async function getMyFavorites(
   const { rows } = await query<MyCopyRow>(
     `SELECT c.id, c.title, c.content, c.category_id,
             cat.label AS category_label, cat.color AS category_color,
-            c.tags, c.status, c.updated_at, c.review_reason
+            c.status, c.updated_at, c.review_reason
      FROM wenan_user_favorites fav
      JOIN wenan_copy_items c ON c.id = fav.copy_id
      JOIN wenan_categories cat ON cat.id = c.category_id
@@ -564,7 +552,7 @@ export async function getMySubmissions(
   const { rows } = await query<MyCopyRow>(
     `SELECT c.id, c.title, c.content, c.category_id,
             cat.label AS category_label, cat.color AS category_color,
-            c.tags, c.status, c.updated_at, c.review_reason
+            c.status, c.updated_at, c.review_reason
      FROM wenan_copy_items c
      JOIN wenan_categories cat ON cat.id = c.category_id
      WHERE c.user_id = $1
@@ -607,19 +595,18 @@ export async function bulkInsertCopyItems(
   for (const item of items) {
     const base = params.length + 1;
     valueRows.push(
-      `($${base}, $${base + 1}, $${base + 2}, $${base + 3}, NULL, 'approved', COALESCE($${base + 4}::date, CURRENT_DATE))`
+      `($${base}, $${base + 1}, $${base + 2}, NULL, 'approved', COALESCE($${base + 3}::date, CURRENT_DATE))`
     );
     params.push(
       item.title.trim(),
       item.content.trim(),
       Number(categoryId),
-      item.tags ?? [],
       item.createdAt ? normalizeDate(item.createdAt) : null
     );
   }
 
   const sql = `INSERT INTO wenan_copy_items
-       (title, content, category_id, tags, user_id, status, updated_at)
+       (title, content, category_id, user_id, status, updated_at)
      VALUES ${valueRows.join(", ")}
      RETURNING id`;
   const { rows } = await query<{ id: number }>(sql, params);
@@ -851,20 +838,18 @@ export async function updateMySubmission(
     title: string;
     content: string;
     categoryId: string;
-    tags: string[];
     status: CopyStatus;
   }
 ): Promise<boolean> {
   const { rowCount } = await query(
     `UPDATE wenan_copy_items
-     SET title = $1, content = $2, category_id = $3, tags = $4,
-         status = $5, review_reason = '', updated_at = CURRENT_DATE
-     WHERE id = $6 AND user_id = $7`,
+     SET title = $1, content = $2, category_id = $3,
+         status = $4, review_reason = '', updated_at = CURRENT_DATE
+     WHERE id = $5 AND user_id = $6`,
     [
       data.title,
       data.content,
       Number(data.categoryId),
-      data.tags,
       data.status,
       Number(id),
       userId,

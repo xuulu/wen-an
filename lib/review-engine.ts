@@ -28,10 +28,9 @@ function toStatus(decision: AIDecision): ReviewDecision {
 export async function runReview(item: {
   title: string;
   content: string;
-  tags?: string[];
   options?: { copyId?: string | number; userId?: number | null };
 }): Promise<ReviewOutcome> {
-  const { title, content, tags, options } = item;
+  const { title, content, options } = item;
   const settings = await getSiteSettings();
   const logBase = {
     copyId: options?.copyId,
@@ -41,7 +40,7 @@ export async function runReview(item: {
 
   // 1. 关键词硬规则
   if (settings.review_keyword_enabled === "true") {
-    const keywordResult = await reviewByKeywords({ title, content, tags });
+    const keywordResult = await reviewByKeywords({ title, content });
     if (!keywordResult.passed) {
       const reason = `命中屏蔽词「${keywordResult.hitKeyword}」`;
       await insertReviewLog({
@@ -56,7 +55,7 @@ export async function runReview(item: {
 
   // 2. AI 审核
   if (settings.review_ai_enabled === "true") {
-    const aiResult = await reviewByAI({ title, content, tags });
+    const aiResult = await reviewByAI({ title, content });
     if (aiResult.decision !== "uncertain") {
       await insertReviewLog({
         ...logBase,

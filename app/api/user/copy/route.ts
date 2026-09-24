@@ -7,8 +7,6 @@ import { rateLimit } from "@/lib/rate-limit";
 import {
   CONTENT_MAX,
   CONTENT_MIN,
-  TAG_MAX_COUNT,
-  TAG_MAX_LEN,
   TITLE_MAX,
 } from "@/lib/batch-import";
 
@@ -29,15 +27,11 @@ export async function POST(request: Request) {
     title?: string;
     content?: string;
     categoryId?: string;
-    tags?: unknown;
   } | null;
 
   const title = body?.title?.trim();
   const content = body?.content?.trim();
   const categoryId = body?.categoryId;
-  const tags = Array.isArray(body?.tags)
-    ? body.tags.filter((t): t is string => typeof t === "string")
-    : [];
 
   if (!title || !content || !categoryId) {
     return NextResponse.json(
@@ -53,12 +47,6 @@ export async function POST(request: Request) {
   if (content.length < CONTENT_MIN || content.length > CONTENT_MAX) {
     return NextResponse.json(
       { error: `正文需在 ${CONTENT_MIN}-${CONTENT_MAX} 字之间` },
-      { status: 400 }
-    );
-  }
-  if (tags.length > TAG_MAX_COUNT || tags.some((t) => t.length > TAG_MAX_LEN)) {
-    return NextResponse.json(
-      { error: `标签最多 ${TAG_MAX_COUNT} 个，每个不超过 ${TAG_MAX_LEN} 字` },
       { status: 400 }
     );
   }
@@ -85,7 +73,7 @@ export async function POST(request: Request) {
   }
 
   const item = await createCopyItem(
-    { title, content, categoryId, tags },
+    { title, content, categoryId },
     { userId: user.id, status: "pending" }
   );
 
@@ -93,7 +81,6 @@ export async function POST(request: Request) {
   const outcome = await runReview({
     title,
     content,
-    tags,
     options: { copyId: item.id, userId: user.id },
   });
 

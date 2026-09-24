@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Loader2, PenLine, X } from "lucide-react";
+import { Check, Loader2, PenLine } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,47 +60,19 @@ export function CopyFormSheet({
   const [categoryId, setCategoryId] = useState(
     initial?.categoryId ?? categories[0]?.id ?? ""
   );
-  const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
-  const [tagInput, setTagInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const editing = initial !== undefined;
-
-  function addTag(raw: string) {
-    const value = raw.trim().replace(/[,，]/g, "");
-    if (!value) return;
-    setTags((prev) =>
-      prev.includes(value) || prev.length >= 10 ? prev : [...prev, value]
-    );
-    setTagInput("");
-  }
-
-  function handleTagKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter" || e.key === "," || e.key === "，") {
-      e.preventDefault();
-      addTag(tagInput);
-    } else if (e.key === "Backspace" && tagInput === "" && tags.length > 0) {
-      setTags((prev) => prev.slice(0, -1));
-    }
-  }
 
   function reset() {
     setTitle(initial?.title ?? "");
     setContent(initial?.content ?? "");
     setCategoryId(initial?.categoryId ?? categories[0]?.id ?? "");
-    setTags(initial?.tags ?? []);
-    setTagInput("");
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || !content.trim() || !categoryId) return;
-    // 输入框里还留着没确认的标签，先收下
-    const finalTags = tagInput.trim()
-      ? tags.includes(tagInput.trim())
-        ? tags
-        : [...tags, tagInput.trim().replace(/[,，]/g, "")]
-      : tags;
 
     setSubmitting(true);
     try {
@@ -111,7 +83,7 @@ export function CopyFormSheet({
         {
           method: editing ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, content, categoryId, tags: finalTags }),
+          body: JSON.stringify({ title, content, categoryId }),
         }
       );
       if (!res.ok) {
@@ -218,40 +190,6 @@ export function CopyFormSheet({
                 required
                 className="flex w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label htmlFor="copy-tags" className="text-sm font-medium">
-                标签
-              </label>
-              <div className="flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-input px-2 py-1.5 shadow-sm transition-colors focus-within:ring-1 focus-within:ring-ring">
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 rounded-md bg-muted py-0.5 pr-1 pl-2 text-xs"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      aria-label={`移除标签 ${tag}`}
-                      onClick={() =>
-                        setTags((prev) => prev.filter((t) => t !== tag))
-                      }
-                    >
-                      <X className="size-3" />
-                    </button>
-                  </span>
-                ))}
-                <input
-                  id="copy-tags"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={handleTagKeyDown}
-                  onBlur={() => tagInput.trim() && addTag(tagInput)}
-                  placeholder={tags.length === 0 ? "回车添加，如：春节" : ""}
-                  className="min-w-20 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                />
-              </div>
             </div>
           </div>
 

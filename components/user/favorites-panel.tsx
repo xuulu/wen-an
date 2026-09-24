@@ -71,10 +71,7 @@ function MiniCard({
         {item.content}
       </p>
 
-      <div className="flex items-center justify-between gap-2 pt-0.5">
-        <div className="min-w-0 truncate text-xs text-muted-foreground">
-          {item.tags.slice(0, 3).map((t) => `#${t}`).join(" ")}
-        </div>
+      <div className="flex items-center justify-end gap-2 pt-0.5">
         <div className="flex shrink-0 items-center">
           <Button
             variant="ghost"

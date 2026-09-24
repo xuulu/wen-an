@@ -440,7 +440,7 @@ export function CopyManager({ categories }: { categories: Category[] }) {
               setSearch(e.target.value);
               setPage(1);
             }}
-            placeholder="搜索标题、正文、类目或标签…"
+            placeholder="搜索标题、正文或类目…"
             className="pl-8"
           />
         </div>
@@ -486,7 +486,6 @@ export function CopyManager({ categories }: { categories: Category[] }) {
               <th className="py-2 pr-4 font-medium">标题</th>
               <th className="py-2 pr-4 font-medium">类目</th>
               <th className="py-2 pr-4 font-medium">状态</th>
-              <th className="py-2 pr-4 font-medium">标签</th>
               <th className="py-2 pr-4 font-medium">更新日期</th>
               <th className="py-2 pr-4 text-right font-medium">操作</th>
             </tr>
@@ -544,9 +543,6 @@ export function CopyManager({ categories }: { categories: Category[] }) {
                       >
                         {statusLabels[item.status]}
                       </span>
-                    </td>
-                    <td className="max-w-40 truncate py-2 pr-4 text-muted-foreground">
-                      {item.tags.map((t) => `#${t}`).join(" ") || "—"}
                     </td>
                     <td className="py-2 pr-4 text-muted-foreground">
                       {item.updatedAt}

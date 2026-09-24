@@ -8,7 +8,6 @@ export interface CopyItem {
   title: string;
   content: string;
   categoryId: string;
-  tags: string[];
   favorite: boolean;
   status: CopyStatus;
   updatedAt: string;
