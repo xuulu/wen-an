@@ -8,42 +8,58 @@
 
 ## 模块边界
 
-- `app/api/user/*`：用户侧接口（投稿 / 收藏 / 反馈 / 账号），校验用户 cookie
-- `app/api/admin/*`：管理接口（审核 / 设置 / 上传），**全部先验管理员**，未授权不进入业务逻辑
+- 根目录 `middleware.ts`：**Edge Runtime 全局限流**，请求到达业务代码前拦截；Edge 不能查 DB，登录用户 id 用 jose 从用户 JWT cookie 安全解析
+- `app/api/user/*`：用户侧接口（投稿 / 收藏 / 反馈 / 公告读取 / 账号），校验用户 cookie
+- `app/api/admin/*`：管理接口（审核 / 类目 / 公告 / 反馈 / 设置 / 上传），**全部先验管理员**，未授权不进入业务逻辑
 - `components/ui/`：shadcn 生成的基础组件，勿随意修改
-- `lib/`：核心服务层——`db.ts`（pg 连接池）、`review-engine.ts`（机审编排）、`auth.ts`（JWT / 密码哈希）、`captcha.ts`（图形验证码）、`rate-limit.ts`（限流）、`site-settings.ts`（站点设置缓存）、`similarity.ts`（投稿相似度去重）
-- `db/schema.sql`：建表脚本（幂等，统一 `wenan_` 前缀），表结构以该脚本为准
+- `lib/`：核心服务层——
+  - 数据：`db.ts`（pg 池）、`copywriting.ts` / `copywriting-data.ts`（类型 + 服务端分页/随机种子查询）、`announcement.ts` / `announcement-data.ts`、`feedback.ts` / `feedback-data.ts`
+  - 审核：`review-engine.ts`（机审编排）、`review-keyword.ts`、`review-ai.ts`、`similarity.ts`（投稿去重）
+  - 认证 / 防护：`auth.ts`（JWT / 哈希）、`captcha.ts`、`rate-limit.ts`（内存限流兜底）、`reserved-names.ts`、`batch-throttle.ts`
+  - 站点级：`site-settings.ts`（设置缓存 / 域名解析）、`seo.ts`（统一 metadata 组装）、`theme.ts`（主题，非 server-only）
+- `db/schema.sql`：建表基线（幂等）；`db/migrations/`：编号增量迁移，每个破坏性迁移必须配 `.rollback.sql`
 
 ## 数据流
 
 - 投稿（单条 / 批量 / 修改）唯一路径：落库 `pending` → 关键词硬规则（命中直接 `rejected`）→ AI 审核（三态）→ `approved` / `rejected` / 转人工 `pending`
-- 前台文案墙：分类筛选 + 关键词 ILIKE 模糊匹配（标题 / 正文 / 类目 / 标签）+ 客户端分页（每页 50）；随机排序 = 服务端随机种子 + 客户端种子 PRNG 洗牌，翻页顺序稳定
-- 管理后台登录：`ADMIN_USERNAME/PASSWORD`（来自 .env）校验后签发 JWT 存 httpOnly cookie
+- 前台文案墙：**服务端分页**（`lib/copywriting-data`，首页 `HOME_PAGE_SIZE=50`，后续翻页走 `/api/copy`）；分类筛选 + 关键词 ILIKE（标题 / 正文 / 类目，**标签已移除**）；随机排序 = 请求级 `randomSeed` 传入 SQL（服务端随机 + 翻页稳定），避免全量挂载 / 全量洗牌
+- 公告：管理端写 `wenan_announcements`（软隐藏 `is_hidden`、置顶 `is_pinned`）；公开接口 `GET /api/announcements` 返回未隐藏、置顶优先列表；管理端 `/api/admin/announcements` 增删改查
+- 管理后台登录：`ADMIN_USERNAME/PASSWORD`（.env）校验后签发 JWT 存 httpOnly cookie
 
 ## 状态所有权
 
-- 会话状态：admin / user 双 cookie 分离，JWT 内校验 role；写接口第一行校验会话
+- 会话状态：admin / user 双 cookie 分离（`wenan_admin_token` / `wenan_user_token`），JWT 内校验 role；写接口第一行校验会话
 - 数据归属：数据层操作均带 `user_id` 归属条件，防越权
-- 站点设置：`wenan_site_settings` 键值表，30 秒缓存自动失效（改配置实时生效）
+- 站点设置：`wenan_site_settings` 键值表，**30 秒缓存**；仅 `updateSiteSettings()` 会主动清缓存（直接改 SQL 不生效，见 TROUBLESHOOTING）
+- 主题：选择持久化在 cookie `wenan-theme`（SSR 权威）+ localStorage（首帧兜底）；`ThemeProvider` context 提供 theme/resolved/setTheme；根 layout 内联防 FOUC 脚本在首帧前写 `data-theme`
+- 限流计数：Upstash Redis（REST，Edge 共享状态）；未配置时 middleware 降级，`lib/rate-limit.ts` 内存滑动窗口仅单实例有效
 
 ## 生命周期规则
 
-- 限流 / 冷却 / 验证码 token：内存态（滑动窗口），单实例有效；多实例部署需换 Redis
-- 验证码 token 一次性使用，答错也消耗（防重放与逐次猜测）
+- 验证码 token：内存态，一次性使用，答错也消耗（防重放 / 逐次猜测）
+- 跑马灯：服务端读设置后把 `marquee_speed_seconds` 写入 CSS 变量 `--marquee-duration`；纯文本渲染，多行以「·」拼接；`marquee_enabled=false` 不渲染
+- sitemap / robots：`export const revalidate = 86400` 每日重建；sitemap 收录动态路由（首页、分类页、文案详情页等）
 
 ## 外部服务
 
 - PostgreSQL：连接串 `DATABASE_URL`，pg 连接池（server-only）
+- Upstash Redis：`UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`，Edge 限流；缺失即降级
 - OpenAI 兼容接口：AI 文案审核，baseURL / model / key / 提示词后台可配置；未配置或失败时不阻断投稿（转人工）
 
 ## 持久化
 
-- 表统一 `wenan_` 前缀：`wenan_users`、`wenan_categories`、`wenan_copy_items`（`user_id IS NULL` 为公共预置；tags 为原生 `TEXT[]`）、`wenan_user_favorites`、`wenan_feedbacks`、`wenan_site_settings`
-- 建表脚本 `db/schema.sql` 幂等（`CREATE TABLE IF NOT EXISTS`）
+- 表统一 `wenan_` 前缀：
+  - `wenan_users`、`wenan_categories`
+  - `wenan_copy_items`（`user_id IS NULL` 为公共预置；**无 tags 列**，标签数据归档于 `wenan_copy_tags_archive`）
+  - `wenan_user_favorites`、`wenan_feedbacks`、`wenan_announcements`
+  - `wenan_site_settings`、`wenan_review_logs`
+- 建表基线 `db/schema.sql` 幂等（`CREATE TABLE IF NOT EXISTS`）；增量以 migrations 为准
 
 ## 重要系统约束
 
-- **机审 fail-closed（唯一路径）**：所有投稿必须经过 `runReview`；AI 返回不可解析 / `uncertain` / 未配置 / 网络失败 → 保持 `pending` 转人工，绝不默认放行
+- **机审 fail-closed（唯一路径）**：所有投稿必须经过 `runReview`；AI 不可解析 / `uncertain` / 未配置 / 网络失败 → 保持 `pending` 转人工，绝不默认放行
 - 全部 SQL 参数绑定，无注入面
 - 上传扩展名由 MIME 白名单推导，忽略客户端文件名，限 2MB
-- HTTPS 部署必须覆写真实 IP（`X-Forwarded-For $remote_addr`），否则伪造请求头可绕过登录限流
+- HTTPS 部署必须覆写真实 IP（`X-Forwarded-For $remote_addr`），否则伪造请求头可绕过限流
+- **禁止给 body 加 filter / transform 动画**（破坏 fixed 定位包含块，侧栏 / sheet UI 会跑丢）；动效只用 background-position / text-shadow / opacity
+- 新增路由 / 服务必须同步 `Linux/nginx/production.conf` 并登记 `Linux/README.md`
