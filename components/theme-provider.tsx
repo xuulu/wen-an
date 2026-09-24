@@ -53,8 +53,22 @@ export function ThemeProvider({
   children: React.ReactNode;
   initialTheme?: ThemeName;
 }) {
-  const [theme, setThemeState] = useState<ThemeName>(initialTheme);
-  const [systemDark, setSystemDark] = useState(false);
+  // 惰性初始化：读持久化值（localStorage 优先，保留 "system"），
+  // 否则读首帧内联脚本已设置到 <html> 的主题；SSR 阶段用服务端 cookie 解析值
+  const [theme, setThemeState] = useState<ThemeName>(() => {
+    if (typeof window === "undefined") return initialTheme;
+    try {
+      const stored = localStorage.getItem(THEME_STORAGE_KEY);
+      if (isThemeName(stored)) return stored;
+    } catch {}
+    const domTheme = document.documentElement.dataset.theme;
+    return isThemeName(domTheme) ? domTheme : initialTheme;
+  });
+  const [systemDark, setSystemDark] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+  );
 
   // 系统偏好监听：跟随系统模式下实时响应
   useEffect(() => {
@@ -62,23 +76,6 @@ export function ThemeProvider({
     const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
-  }, []);
-
-  // 初始化同步：cookie → localStorage（与内联防 FOUC 脚本同源），
-  // 保证 Provider 状态与首帧 DOM 一致（cookie 有效时 SSR 已正确，无需改动）
-  useEffect(() => {
-    let stored: string | null = null;
-    try {
-      stored = document.cookie.match(/(?:^|; )wenan-theme=([^;]*)/)?.[1] ?? null;
-    } catch {}
-    if (!stored) {
-      try {
-        stored = localStorage.getItem(THEME_STORAGE_KEY);
-      } catch {}
-    }
-    if (isThemeName(stored) && stored !== "system") {
-      setThemeState(stored);
-    }
   }, []);
 
   // 生效主题
