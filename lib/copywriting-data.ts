@@ -25,6 +25,10 @@ interface CopyItemRow {
   updated_at: Date | string;
   is_favorite: boolean;
   review_reason?: string;
+  /** 投稿人 id（NULL = 公共预置文案） */
+  user_id?: number | null;
+  /** 投稿人昵称（JOIN wenan_users） */
+  author_name?: string | null;
 }
 
 export interface Pagination {
@@ -361,12 +365,13 @@ export async function getCopyItemById(
     `
       SELECT
         c.id, c.title, c.content, c.category_id, c.status, c.updated_at,
-        c.review_reason,
+        c.review_reason, c.user_id, u.nickname AS author_name,
         EXISTS (
           SELECT 1 FROM wenan_user_favorites f
           WHERE f.copy_id = c.id AND f.user_id = $1
         ) AS is_favorite
       FROM wenan_copy_items c
+      LEFT JOIN wenan_users u ON u.id = c.user_id
       WHERE c.id = $2
     `,
     [userId, Number(id)]
@@ -382,6 +387,13 @@ export async function getCopyItemById(
     status: row.status,
     updatedAt: formatDate(row.updated_at),
     reviewReason: row.review_reason,
+    // 投稿人信息：仅用户投稿（user_id 非空）时返回，公共预置文案忽略
+    ...(row.user_id
+      ? {
+          authorId: String(row.user_id),
+          authorName: row.author_name ?? `用户${row.user_id}`,
+        }
+      : {}),
   };
 }
 

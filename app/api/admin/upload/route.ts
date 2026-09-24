@@ -48,7 +48,11 @@ export async function POST(request: Request) {
   }
 
   const filename = `${randomUUID()}${MIME_EXT[file.type]}`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads");
+  // 上传到项目根的持久目录 storage/uploads（不进 public）：
+  // Next 生产模式只在构建时固化 public 静态清单，运行时写入 public 的文件
+  // 在 next start 下会 404（上传图片无效的根因）。
+  // 文件由 app/uploads/[filename]/route.ts 提供，路径仍是 /uploads/<name>。
+  const uploadDir = path.join(process.cwd(), "storage", "uploads");
   await mkdir(uploadDir, { recursive: true });
 
   const bytes = Buffer.from(await file.arrayBuffer());

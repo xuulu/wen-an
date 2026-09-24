@@ -22,6 +22,7 @@ const STATIC_PATTERNS = [
   /^\/_next\/image/,
   /^\/favicon\.ico$/,
   /^\/public\//,
+  /^\/uploads\//,
   /^\/sitemap\.xml$/,
   /^\/robots\.txt$/,
   /^\/api\/captcha/,

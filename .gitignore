@@ -36,7 +36,7 @@ yarn-error.log*
 
 # IDE 本地数据与运行时上传
 .trae/
-/public/uploads
+/storage
 
 # vercel
 .vercel

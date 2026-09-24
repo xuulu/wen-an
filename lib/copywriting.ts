@@ -13,6 +13,10 @@ export interface CopyItem {
   updatedAt: string;
   /** 审核拒绝/不确定原因，通过时为空 */
   reviewReason?: string;
+  /** 投稿人 id；公共预置文案（无投稿人）时为 undefined */
+  authorId?: string;
+  /** 投稿人昵称 */
+  authorName?: string;
 }
 
 /** 用户后台「我的收藏/投稿」列表项，附带类目名称与配色 */

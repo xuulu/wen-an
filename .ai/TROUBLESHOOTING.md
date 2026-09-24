@@ -37,3 +37,19 @@
 - **已验证的解决方案：** 页面 `generateMetadata` 中用 `getSeoContext()` 读取设置，标题拼 `${siteName} - ${settings.site_title_suffix}`（或通过 `buildSeoMetadata` 传入）；JSON-LD 的 name 同步。
 - **验证方式：** 后台改后缀保存 → curl 首页 `<title>` 即时为新值。
 - **适用版本 / 环境 / 条件：** 所有希望标题跟随后台设置的页面；禁止在 page 中写死站名 / 后缀。
+
+## 站点设置上传图片后不显示（404 / 无效）
+
+- **症状：** 后台上传 favicon / logo / OG 图返回成功，但页面图片不显示，直接访问 URL 为 404。
+- **根本原因：** 文件原写入 `public/uploads`，而 Next 生产模式（next start）只在**构建时**固化 public 静态清单，运行时新增文件不会被服务（dev 模式正常，掩盖了问题）。
+- **已验证的解决方案：** 上传改写到项目根持久目录 `storage/uploads`（.gitignore 忽略），由 Route Handler `app/uploads/[filename]/route.ts` 读取，路径仍为 `/uploads/<uuid>.<ext>`；Handler 做 basename + 扩展名白名单（防穿越）、nosniff、immutable 缓存，SVG 加 restrictive CSP 防存储型 XSS。
+- **验证方式：** curl 上传 → GET /uploads/xxx 返回 200 + image/*；穿越 payload 返回 404。
+- **适用版本 / 环境 / 条件：** 所有生产部署；不得回退到运行时写 public。
+
+## 首页跑马灯左右两端出现白边 / 缺口
+
+- **症状：** 深色跑马灯条左右两端透出页面背景（浅色主题下呈白边）。
+- **根本原因：** mask-image 直接加在整条容器上，连深色背景一起在两端 4% 渐隐。
+- **已验证的解决方案：** 背景条（外层）不做 mask、完整铺满；mask 只加在内层「滚动文字」的 overflow 容器上。
+- **验证方式：** 截图确认背景条左右铺满、仅文字边缘渐隐。
+- **适用版本 / 环境 / 条件：** 所有带边缘渐隐的通栏组件。

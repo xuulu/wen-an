@@ -154,6 +154,18 @@ export default async function CopyPage({ params }: CopyPageProps) {
                 </>
               )}
               <span>{item.updatedAt}</span>
+              {/* 投稿人：仅用户投稿（有 authorId）时显示，公共预置文案忽略 */}
+              {item.authorId && (
+                <>
+                  <span className="text-foreground/20">/</span>
+                  <span className="text-muted-foreground/80">
+                    投稿人：{item.authorName}
+                    <span className="text-muted-foreground/50">
+                      （ID: {item.authorId}）
+                    </span>
+                  </span>
+                </>
+              )}
             </div>
 
             <div className="mt-6 whitespace-pre-wrap text-[15px] leading-loose text-foreground/90">
