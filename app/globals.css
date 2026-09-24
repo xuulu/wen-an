@@ -179,19 +179,24 @@ html[data-theme="neon"] {
   color-scheme: dark;
 }
 
+/* 霓虹背景：只用 background-position 动画。
+   ⚠️ 不要给 body 加 filter/transform 动画：filter 会让 body 成为
+   fixed 定位元素的包含块，侧栏/弹层（position: fixed）将不再相对视口，
+   滚动后侧栏底部（主题切换、用户登录）会"跑丢"（历史 bug）。 */
 html[data-theme="neon"] body {
   background:
     radial-gradient(1200px 600px at 10% -10%, oklch(0.4 0.2 300 / 0.35), transparent 60%),
     radial-gradient(1000px 500px at 110% 20%, oklch(0.45 0.2 180 / 0.3), transparent 55%),
     radial-gradient(900px 600px at 50% 120%, oklch(0.45 0.22 340 / 0.28), transparent 60%),
     var(--background);
+  background-size: 200% 200%;
   background-attachment: fixed;
   animation: neon-aurora 18s ease-in-out infinite alternate;
 }
 
 @keyframes neon-aurora {
-  from { filter: hue-rotate(0deg); }
-  to { filter: hue-rotate(45deg); }
+  from { background-position: 0% 0%; }
+  to { background-position: 100% 100%; }
 }
 
 html[data-theme="neon"] h1,
