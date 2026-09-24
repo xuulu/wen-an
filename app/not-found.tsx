@@ -85,11 +85,9 @@ export default async function NotFound() {
 
         {/* 返回首页 */}
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <Button asChild variant="outline">
-            <Link href="/">
-              <Home className="size-4" />
-              返回首页
-            </Link>
+          <Button render={<Link href="/" />} variant="outline">
+            <Home className="size-4" />
+            返回首页
           </Button>
         </div>
       </main>
