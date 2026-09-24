@@ -36,3 +36,16 @@ nginx -t && systemctl reload nginx
 **以后每新增一个需要对外暴露的路由、目录或独立服务，都必须回到 `nginx/production.conf` 同步修改**，并在上表登记，否则线上会 404 / 502。改动后必须 `nginx -t` 校验再 reload。
 
 > 注意：限流中间件依赖 `X-Forwarded-For` 获取访客真实 IP，删除 `proxy_set_header` 段落会导致全站匿名用户被限流中间件视为同一 IP。
+
+## 定时任务（回收站清理 / 删除任务续跑）
+
+`/api/cron/deletion-jobs` 负责物理删除过期回收站内容、续跑卡住的删除/注销任务，需带 `Authorization: Bearer <CRON_SECRET>`（CRON_SECRET 在 .env 配置）。建议用 crontab 每天调用一次：
+
+```bash
+crontab -e
+# 每天 03:17 触发（替换为你的 CRON_SECRET）
+17 3 * * * curl -fsS -H "Authorization: Bearer <CRON_SECRET>" \
+  http://127.0.0.1:3000/api/cron/deletion-jobs >/dev/null 2>&1
+```
+
+该路径已被 `location /api/` 覆盖转发，无需改 Nginx；但**新增其他内部 cron 路由时仍需回到上表登记**。

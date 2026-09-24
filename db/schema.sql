@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS wenan_users (
   nickname      VARCHAR(64)  NOT NULL UNIQUE,
   password_hash VARCHAR(200) NULL,
   avatar_url    VARCHAR(500) NOT NULL DEFAULT '',
+  deactivated_at TIMESTAMPTZ NULL,
   created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -28,6 +29,7 @@ CREATE TABLE IF NOT EXISTS wenan_users (
 COMMENT ON TABLE  wenan_users IS '用户';
 COMMENT ON COLUMN wenan_users.nickname IS '账号名（登录与显示同一个）';
 COMMENT ON COLUMN wenan_users.password_hash IS '密码哈希，格式 scrypt:salt:hash；NULL 表示未设置密码';
+COMMENT ON COLUMN wenan_users.deactivated_at IS '注销时间，NULL=正常；注销后昵称改为「已注销用户#id」，登录被拒绝';
 
 -- -------------------------------------------------------------
 -- 2. 类目表
@@ -58,17 +60,20 @@ CREATE TABLE IF NOT EXISTS wenan_copy_items (
                 CHECK (status IN ('pending','approved','rejected')),
   updated_at  DATE NOT NULL DEFAULT CURRENT_DATE,
   created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  review_reason TEXT NOT NULL DEFAULT ''
+  review_reason TEXT NOT NULL DEFAULT '',
+  deleted_at  TIMESTAMPTZ NULL
 );
 
 COMMENT ON TABLE  wenan_copy_items IS '文案条目';
 COMMENT ON COLUMN wenan_copy_items.user_id IS '创建者，NULL 表示公共预置文案';
 COMMENT ON COLUMN wenan_copy_items.status IS '审核状态：pending 待审核 / approved 已通过 / rejected 已拒绝';
 COMMENT ON COLUMN wenan_copy_items.review_reason IS '审核拒绝/不确定原因，供投稿用户查看';
+COMMENT ON COLUMN wenan_copy_items.deleted_at IS '软删除时间，NULL=正常；非 NULL=回收站，冷静期后物理删除';
 
 -- 索引：按类目、按用户检索
 CREATE INDEX IF NOT EXISTS idx_wenan_copy_items_category_id ON wenan_copy_items(category_id);
 CREATE INDEX IF NOT EXISTS idx_wenan_copy_items_user_id     ON wenan_copy_items(user_id);
+CREATE INDEX IF NOT EXISTS idx_wenan_copy_items_deleted_at  ON wenan_copy_items(deleted_at);
 
 -- -------------------------------------------------------------
 -- 4. 用户收藏表（用户 × 文案 关联）
@@ -158,6 +163,27 @@ CREATE INDEX IF NOT EXISTS idx_wenan_review_logs_created
   ON wenan_review_logs(created_at DESC);
 
 COMMENT ON TABLE wenan_review_logs IS '审核日志';
+
+-- -------------------------------------------------------------
+-- 8. 批量删除 / 注销任务表（异步分批、可观测、可恢复）
+-- -------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS wenan_deletion_jobs (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     BIGINT NULL REFERENCES wenan_users(id) ON DELETE SET NULL,
+  kind        VARCHAR(20) NOT NULL
+                CHECK (kind IN ('batch_delete','deactivate')),
+  status      VARCHAR(20) NOT NULL DEFAULT 'pending'
+                CHECK (status IN ('pending','processing','completed','failed','cancelled')),
+  total       INTEGER NOT NULL DEFAULT 0,
+  processed   INTEGER NOT NULL DEFAULT 0,
+  payload     JSONB NOT NULL DEFAULT '{}'::jsonb,
+  error       TEXT NOT NULL DEFAULT '',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_wenan_deletion_jobs_status
+  ON wenan_deletion_jobs(status, created_at);
+COMMENT ON TABLE wenan_deletion_jobs IS '批量删除/注销异步任务';
 
 -- =============================================================
 -- 种子数据

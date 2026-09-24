@@ -36,6 +36,9 @@ const POLICIES = {
   login: { limit: 10, window: "1 h", prefix: "wenan:login" },
   submit: { limit: 30, window: "1 h", prefix: "wenan:submit" },
   batch: { limit: 2, window: "1 h", prefix: "wenan:batch" },
+  // 批量删除（单请求可含多条，按请求计）、注销（极敏感，从严）
+  delete: { limit: 10, window: "1 h", prefix: "wenan:delete" },
+  deactivate: { limit: 3, window: "1 h", prefix: "wenan:deactivate" },
 } as const;
 
 type PolicyKey = keyof typeof POLICIES;
@@ -52,6 +55,12 @@ function matchPolicy(request: NextRequest): PolicyKey | null {
   }
   if (pathname === "/api/user/copy" && request.method === "POST") {
     return "submit";
+  }
+  if (pathname === "/api/user/submissions" && request.method === "DELETE") {
+    return "delete";
+  }
+  if (pathname === "/api/user/deactivate" && request.method === "POST") {
+    return "deactivate";
   }
   return null;
 }

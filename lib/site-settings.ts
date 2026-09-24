@@ -44,6 +44,10 @@ export const SETTING_DEFAULTS = {
     "社区共建需要大家，欢迎注册投稿，为社区贡献一份力量。",
   // 跑马灯滚动一周时长（秒）；越小越快
   marquee_speed_seconds: "32",
+  // 投稿删除：被收藏数达到该阈值的文案受社区保护，作者不可单方面删除
+  deletion_favorite_threshold: "3",
+  // 回收站冷静期天数；到期后由定时任务物理删除
+  deletion_grace_days: "30",
 } as const;
 
 export type SettingKey = keyof typeof SETTING_DEFAULTS;

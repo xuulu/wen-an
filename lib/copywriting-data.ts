@@ -182,7 +182,7 @@ export async function getCopyItems(
   const keyword = search?.trim();
 
   // SELECT：$1 = userId（is_favorite 子查询），条件参数从 $2 起
-  const selectConds: string[] = [];
+  const selectConds: string[] = ["c.deleted_at IS NULL"];
   const selectParams: unknown[] = [userId];
 
   if (filterByCategory) {
@@ -223,7 +223,7 @@ export async function getCopyItems(
   }
 
   // COUNT：条件参数从 $1 起（占位符序列与 SELECT 不同，参数分开构建）
-  const countConds: string[] = [];
+  const countConds: string[] = ["c.deleted_at IS NULL"];
   const countParams: unknown[] = [];
 
   if (filterByCategory) {
@@ -336,7 +336,7 @@ export async function getCategoryCounts(): Promise<{ id: string; count: number }
   const { rows } = await query<{ id: number; count: number }>(
     `SELECT cat.id, COUNT(c.id)::int AS count
      FROM wenan_categories cat
-     LEFT JOIN wenan_copy_items c ON c.category_id = cat.id AND c.status = 'approved'
+     LEFT JOIN wenan_copy_items c ON c.category_id = cat.id AND c.status = 'approved' AND c.deleted_at IS NULL
      GROUP BY cat.id
      ORDER BY cat.sort_order ASC, cat.id ASC`
   );
@@ -350,16 +350,17 @@ export async function getFavoritesCount(userId: number): Promise<number> {
     `SELECT COUNT(*)::int AS total
      FROM wenan_user_favorites f
      JOIN wenan_copy_items c ON c.id = f.copy_id
-     WHERE f.user_id = $1 AND c.status = 'approved'`,
+     WHERE f.user_id = $1 AND c.status = 'approved' AND c.deleted_at IS NULL`,
     [userId]
   );
   return rows[0]?.total ?? 0;
 }
 
-/** 按文案 id 查询单条 */
+/** 按文案 id 查询单条；includeDeleted=true 时连软删记录一起返回（回收站用） */
 export async function getCopyItemById(
   id: string,
-  userId = 0
+  userId = 0,
+  includeDeleted = false
 ): Promise<CopyItem | null> {
   const { rows } = await query<CopyItemRow>(
     `
@@ -372,7 +373,7 @@ export async function getCopyItemById(
         ) AS is_favorite
       FROM wenan_copy_items c
       LEFT JOIN wenan_users u ON u.id = c.user_id
-      WHERE c.id = $2
+      WHERE c.id = $2 ${includeDeleted ? "" : "AND c.deleted_at IS NULL"}
     `,
     [userId, Number(id)]
   );
@@ -458,7 +459,7 @@ export async function getPendingCopyItems(): Promise<CopyItem[]> {
     `SELECT id, title, content, category_id, status, updated_at,
             FALSE AS is_favorite
      FROM wenan_copy_items
-     WHERE status = 'pending'
+     WHERE status = 'pending' AND deleted_at IS NULL
      ORDER BY created_at ASC, id ASC`
   );
   return rows.map((row) => ({
@@ -569,7 +570,7 @@ export async function getMyFavorites(
   offset: number
 ): Promise<MyListPage> {
   const { rows: countRows } = await query<{ total: number }>(
-    "SELECT COUNT(*)::int AS total FROM wenan_user_favorites WHERE user_id = $1",
+    "SELECT COUNT(*)::int AS total FROM wenan_user_favorites fav JOIN wenan_copy_items c ON c.id=fav.copy_id WHERE fav.user_id = $1 AND c.deleted_at IS NULL",
     [userId]
   );
   const total = countRows[0]?.total ?? 0;
@@ -582,7 +583,7 @@ export async function getMyFavorites(
      FROM wenan_user_favorites fav
      JOIN wenan_copy_items c ON c.id = fav.copy_id
      JOIN wenan_categories cat ON cat.id = c.category_id
-     WHERE fav.user_id = $1
+     WHERE fav.user_id = $1 AND c.deleted_at IS NULL
      ORDER BY fav.created_at DESC, c.id DESC
      ${paging}`,
     [userId]
@@ -598,7 +599,7 @@ export async function getMySubmissions(
   offset: number
 ): Promise<MyListPage> {
   const { rows: countRows } = await query<{ total: number }>(
-    "SELECT COUNT(*)::int AS total FROM wenan_copy_items WHERE user_id = $1",
+    "SELECT COUNT(*)::int AS total FROM wenan_copy_items WHERE user_id = $1 AND deleted_at IS NULL",
     [userId]
   );
   const total = countRows[0]?.total ?? 0;
@@ -610,7 +611,7 @@ export async function getMySubmissions(
             c.status, c.updated_at, c.review_reason
      FROM wenan_copy_items c
      JOIN wenan_categories cat ON cat.id = c.category_id
-     WHERE c.user_id = $1
+     WHERE c.user_id = $1 AND c.deleted_at IS NULL
      ORDER BY c.updated_at DESC, c.id DESC
      ${paging}`,
     [userId]
@@ -693,7 +694,7 @@ export async function getOverviewStats(): Promise<OverviewStats> {
         COUNT(*) FILTER (WHERE status = 'approved')::int AS approved,
         COUNT(*) FILTER (WHERE status = 'pending')::int AS pending,
         COUNT(*) FILTER (WHERE status = 'rejected')::int AS rejected
-      FROM wenan_copy_items`);
+      FROM wenan_copy_items WHERE deleted_at IS NULL`);
   const c = copyRows[0] ?? {
     total: 0, approved: 0, pending: 0, rejected: 0,
   };
@@ -738,7 +739,9 @@ export async function getTopFavorited(
   limit: number,
   onlyApproved = false
 ): Promise<TopFavoritedItem[]> {
-  const where = onlyApproved ? "WHERE c.status = 'approved'" : "";
+  const where = onlyApproved
+    ? "WHERE c.status = 'approved' AND c.deleted_at IS NULL"
+    : "WHERE c.deleted_at IS NULL";
   const { rows } = await query<{
     id: number;
     title: string;
@@ -857,26 +860,161 @@ export async function getRecentUsers(
   }));
 }
 
-/** 批量删除自己的投稿，返回实际删除条数 */
-export async function deleteMySubmissions(
+/**
+ * 软删除自己的投稿（进入回收站，冷静期内可恢复）。
+ * 已被 ≥ favoriteThreshold 人收藏的文案受社区保护，不允许作者单方面删除。
+ * 返回实际软删 id 与受保护 id（含收藏数）。
+ */
+export async function softDeleteMySubmissions(
+  userId: number,
+  ids: number[],
+  favoriteThreshold: number
+): Promise<{
+  deleted: number[];
+  protected: { id: number; favCount: number }[];
+}> {
+  if (ids.length === 0) return { deleted: [], protected: [] };
+
+  // 归属 + 收藏数（仅未删除）
+  const { rows } = await query<{ id: number; fav_count: number }>(
+    `SELECT c.id, COUNT(f.user_id)::int AS fav_count
+     FROM wenan_copy_items c
+     LEFT JOIN wenan_user_favorites f ON f.copy_id = c.id
+     WHERE c.user_id = $1 AND c.id = ANY($2::bigint[]) AND c.deleted_at IS NULL
+     GROUP BY c.id`,
+    [userId, ids]
+  );
+
+  const protectedRows = rows.filter((r) => r.fav_count >= favoriteThreshold);
+  const deletable = rows
+    .filter((r) => r.fav_count < favoriteThreshold)
+    .map((r) => r.id);
+
+  if (deletable.length > 0) {
+    await query(
+      `UPDATE wenan_copy_items
+       SET deleted_at = CURRENT_TIMESTAMP
+       WHERE user_id = $1 AND id = ANY($2::bigint[]) AND deleted_at IS NULL`,
+      [userId, deletable]
+    );
+  }
+
+  return {
+    deleted: deletable,
+    protected: protectedRows.map((r) => ({ id: r.id, favCount: r.fav_count })),
+  };
+}
+
+/** 从回收站恢复自己的投稿，返回恢复条数 */
+export async function restoreMySubmissions(
   userId: number,
   ids: number[]
 ): Promise<number> {
   if (ids.length === 0) return 0;
   const { rowCount } = await query(
-    "DELETE FROM wenan_copy_items WHERE user_id = $1 AND id = ANY($2::bigint[])",
+    `UPDATE wenan_copy_items SET deleted_at = NULL
+     WHERE user_id = $1 AND id = ANY($2::bigint[]) AND deleted_at IS NOT NULL`,
     [userId, ids]
   );
   return rowCount ?? 0;
 }
 
-/** 校验投稿归属：该文案是否存在且属于该用户 */
+/** 回收站列表（已软删的我的投稿），limit<=0 不分页 */
+export async function getRecycleBin(
+  userId: number,
+  limit: number,
+  offset: number
+): Promise<MyListPage> {
+  const { rows: countRows } = await query<{ total: number }>(
+    "SELECT COUNT(*)::int AS total FROM wenan_copy_items WHERE user_id = $1 AND deleted_at IS NOT NULL",
+    [userId]
+  );
+  const total = countRows[0]?.total ?? 0;
+  const paging = limit > 0 ? ` LIMIT ${limit} OFFSET ${offset}` : "";
+  const { rows } = await query<MyCopyRow>(
+    `SELECT c.id, c.title, c.content, c.category_id,
+            cat.label AS category_label, cat.color AS category_color,
+            c.status, c.updated_at, c.review_reason
+     FROM wenan_copy_items c
+     JOIN wenan_categories cat ON cat.id = c.category_id
+     WHERE c.user_id = $1 AND c.deleted_at IS NOT NULL
+     ORDER BY c.deleted_at DESC, c.id DESC
+     ${paging}`,
+    [userId]
+  );
+  return { items: rows.map(mapMyRow), total };
+}
+
+/**
+ * 物理删除已过冷静期的软删文案（连带收藏 CASCADE）。
+ * 分批限量执行（cron 调用），返回删除条数；graceDays 为冷静期天数。
+ */
+export async function purgeExpiredDeleted(
+  graceDays: number,
+  batchSize: number
+): Promise<number> {
+  const limit = Math.max(1, Math.min(500, Math.floor(batchSize)));
+  const { rowCount } = await query(
+    `DELETE FROM wenan_copy_items
+     WHERE id IN (
+       SELECT id FROM wenan_copy_items
+       WHERE deleted_at IS NOT NULL
+         AND deleted_at < CURRENT_TIMESTAMP - ($1 || ' days')::interval
+       LIMIT ${limit}
+     )`,
+    [Math.max(0, Math.floor(graceDays))]
+  );
+  return rowCount ?? 0;
+}
+
+/**
+ * 注销账号并匿名化：
+ * - 已通过（approved）投稿：解除作者关联（user_id=NULL），内容匿名保留；
+ * - 待审/被拒（pending/rejected）投稿：软删（不进入公开站点）。
+ * - 账号：置 deactivated_at、昵称改为「已注销用户#id」、清空头像。
+ * 调用方应在校验密码后执行，并在成功后清除登录 cookie。
+ */
+export async function deactivateAndAnonymize(
+  userId: number
+): Promise<{ anonymized: number; softDeleted: number }> {
+  const anonymized =
+    (
+      await query(
+        `UPDATE wenan_copy_items SET user_id = NULL
+         WHERE user_id = $1 AND status = 'approved' AND deleted_at IS NULL`,
+        [userId]
+      )
+    ).rowCount ?? 0;
+
+  const softDeleted =
+    (
+      await query(
+        `UPDATE wenan_copy_items SET deleted_at = CURRENT_TIMESTAMP
+         WHERE user_id = $1 AND status IN ('pending','rejected') AND deleted_at IS NULL`,
+        [userId]
+      )
+    ).rowCount ?? 0;
+
+  await query(
+    `UPDATE wenan_users
+     SET deactivated_at = CURRENT_TIMESTAMP,
+         nickname = '已注销用户#' || id,
+         avatar_url = '',
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = $1`,
+    [userId]
+  );
+
+  return { anonymized, softDeleted };
+}
+
+/** 校验投稿归属：该文案是否存在（未删除）且属于该用户 */
 export async function isOwnedSubmission(
   userId: number,
   id: string
 ): Promise<boolean> {
   const { rowCount } = await query(
-    "SELECT 1 FROM wenan_copy_items WHERE id = $1 AND user_id = $2",
+    "SELECT 1 FROM wenan_copy_items WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL",
     [Number(id), userId]
   );
   return (rowCount ?? 0) > 0;

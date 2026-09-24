@@ -51,11 +51,18 @@ export async function POST(request: Request) {
     id: number;
     nickname: string;
     password_hash: string | null;
+    deactivated_at: Date | string | null;
   }>(
-    "SELECT id, nickname, password_hash FROM wenan_users WHERE nickname = $1",
+    "SELECT id, nickname, password_hash, deactivated_at FROM wenan_users WHERE nickname = $1",
     [nickname]
   );
   const user = rows[0];
+  if (user?.deactivated_at) {
+    return NextResponse.json(
+      { error: "该账号已注销，无法登录" },
+      { status: 403 }
+    );
+  }
   if (!user || !user.password_hash || !verifyPassword(password, user.password_hash)) {
     return NextResponse.json(
       { error: "用户名或密码错误", captchaFailed: true },

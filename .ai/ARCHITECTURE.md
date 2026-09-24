@@ -24,6 +24,7 @@
 - 投稿（单条 / 批量 / 修改）唯一路径：落库 `pending` → 关键词硬规则（命中直接 `rejected`）→ AI 审核（三态）→ `approved` / `rejected` / 转人工 `pending`
 - 前台文案墙：**服务端分页**（`lib/copywriting-data`，首页 `HOME_PAGE_SIZE=50`，后续翻页走 `/api/copy`）；分类筛选 + 关键词 ILIKE（标题 / 正文 / 类目，**标签已移除**）；随机排序 = 请求级 `randomSeed` 传入 SQL（服务端随机 + 翻页稳定），避免全量挂载 / 全量洗牌
 - 公告：管理端写 `wenan_announcements`（软隐藏 `is_hidden`、置顶 `is_pinned`）；公开接口 `GET /api/announcements` 返回未隐藏、置顶优先列表；管理端 `/api/admin/announcements` 增删改查
+- 删除 / 注销：删除一律**软删**（`wenan_copy_items.deleted_at`，进回收站，冷静期 `deletion_grace_days` 天可恢复，到期由 cron 物理删除）；被收藏数 ≥ `deletion_favorite_threshold` 的文案受保护、作者不可删。批量删除 / 注销写 `wenan_deletion_jobs`（pending）→ 响应 202 → Next `after()` 分块（50/批）执行；`GET /api/cron/deletion-jobs`（Bearer CRON_SECRET）物理清理过期回收站 + 续跑卡住任务。注销 = 已通过投稿 `user_id=NULL` 匿名保留、待审/被拒软删、用户置 `deactivated_at` 且昵称改「已注销用户#id」（登录被拒）
 - 管理后台登录：`ADMIN_USERNAME/PASSWORD`（.env）校验后签发 JWT 存 httpOnly cookie
 
 ## 状态所有权
@@ -50,9 +51,10 @@
 
 - 表统一 `wenan_` 前缀：
   - `wenan_users`、`wenan_categories`
-  - `wenan_copy_items`（`user_id IS NULL` 为公共预置；**无 tags 列**，标签数据归档于 `wenan_copy_tags_archive`）
+  - `wenan_copy_items`（`user_id IS NULL` 为公共预置；**无 tags 列**，标签数据归档于 `wenan_copy_tags_archive`；`deleted_at` 软删）
   - `wenan_user_favorites`、`wenan_feedbacks`、`wenan_announcements`
-  - `wenan_site_settings`、`wenan_review_logs`
+  - `wenan_site_settings`、`wenan_review_logs`、`wenan_deletion_jobs`
+- 文件持久目录：用户上传图片在项目根 `storage/uploads`（.gitignore 忽略，非 public），经 `app/uploads/[filename]` 提供
 - 建表基线 `db/schema.sql` 幂等（`CREATE TABLE IF NOT EXISTS`）；增量以 migrations 为准
 
 ## 重要系统约束

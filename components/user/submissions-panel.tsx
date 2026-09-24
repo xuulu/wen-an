@@ -13,6 +13,7 @@ import {
 
 import { BatchImportSheet } from "@/components/library/batch-import-sheet";
 import { CopyFormSheet } from "@/components/library/copy-form-sheet";
+import { DeleteSubmissionsDialog } from "@/components/user/delete-submissions-dialog";
 import { Button } from "@/components/ui/button";
 import type { Category, CopyItem } from "@/lib/copywriting";
 import {
@@ -28,7 +29,8 @@ export function SubmissionsPanel({ categories }: { categories: Category[] }) {
   const [batchOpen, setBatchOpen] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [busy, setBusy] = useState(false);
+  // 删除确认弹窗待处理的 id（非空即打开）
+  const [deleteIds, setDeleteIds] = useState<string[] | null>(null);
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -62,27 +64,11 @@ export function SubmissionsPanel({ categories }: { categories: Category[] }) {
 
   async function handleBatchDelete() {
     if (selected.size === 0) return;
-    if (!confirm(`确定删除选中的 ${selected.size} 条投稿吗？删除后不可恢复。`)) {
-      return;
-    }
-    setBusy(true);
-    try {
-      await list.bulkRemove([...selected]);
-      exitSelectMode();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "删除失败");
-    } finally {
-      setBusy(false);
-    }
+    setDeleteIds([...selected]);
   }
 
   async function handleSingleDelete(id: string) {
-    if (!confirm("确定删除这条投稿吗？")) return;
-    try {
-      await list.bulkRemove([id]);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "删除失败");
-    }
+    setDeleteIds([id]);
   }
 
   return (
@@ -128,10 +114,9 @@ export function SubmissionsPanel({ categories }: { categories: Category[] }) {
             size="sm"
             variant="destructive"
             className="ml-auto"
-            disabled={selected.size === 0 || busy}
+            disabled={selected.size === 0}
             onClick={handleBatchDelete}
           >
-            {busy && <Loader2 className="animate-spin" />}
             批量删除
           </Button>
         </div>
@@ -268,6 +253,16 @@ export function SubmissionsPanel({ categories }: { categories: Category[] }) {
         categories={categories}
         actionUrl="/api/user/copy/batch"
         mode="user"
+      />
+
+      <DeleteSubmissionsDialog
+        open={deleteIds !== null}
+        ids={deleteIds ?? []}
+        onClose={() => setDeleteIds(null)}
+        onDone={() => {
+          exitSelectMode();
+          list.refresh();
+        }}
       />
     </div>
   );

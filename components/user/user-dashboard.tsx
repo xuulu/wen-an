@@ -16,6 +16,7 @@ import { AnnouncementCenter } from "@/components/user/announcement-center";
 import { FavoritesPanel } from "@/components/user/favorites-panel";
 import { FeedbacksPanel } from "@/components/user/feedbacks-panel";
 import { SettingsPanel } from "@/components/user/settings-panel";
+import { DangerZone } from "@/components/user/danger-zone";
 import { SubmissionsPanel } from "@/components/user/submissions-panel";
 import { Button } from "@/components/ui/button";
 import type { Category } from "@/lib/copywriting";
@@ -113,7 +114,12 @@ export function UserDashboard({
         {tab === "favorites" && <FavoritesPanel />}
         {tab === "submissions" && <SubmissionsPanel categories={categories} />}
         {tab === "feedbacks" && <FeedbacksPanel />}
-        {tab === "settings" && <SettingsPanel nickname={nickname} />}
+        {tab === "settings" && (
+          <div className="flex flex-col gap-4">
+            <SettingsPanel nickname={nickname} />
+            <DangerZone />
+          </div>
+        )}
       </section>
     </main>
   );
