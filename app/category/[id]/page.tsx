@@ -65,9 +65,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const { id } = await params;
   const user = await getCurrentUser();
 
-  const [categories, settings, { items }, hotItems] = await Promise.all([
+  const [categories, { items }, hotItems] = await Promise.all([
     getCategories(),
-    getSiteSettings(),
     getCopyItems({ userId: user?.id ?? 0 }),
     getTopFavorited(5, true),
   ]);
