@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { LibraryShell } from "@/components/library/library-shell";
+import { MarqueeBanner } from "@/components/library/marquee-banner";
 import { SiteFooter } from "@/components/library/site-footer";
 import { getCurrentUser } from "@/lib/auth";
 import {
@@ -39,16 +40,19 @@ export default async function Home({
   const initialRecommended = pickDailyRecommend(items);
 
   return (
-    <LibraryShell
-      items={items}
-      categories={categories}
-      initialRecommended={initialRecommended}
-      isLoggedIn={!!user}
-      userNickname={user?.nickname ?? ""}
-      hotItems={hotItems}
-      seed={randomUUID().split("-").reduce((acc, part) => (acc ^ parseInt(part, 16)) >>> 0, 0)}
-      initialQuery={q ?? ""}
-      footer={<SiteFooter />}
-    />
+    <>
+      <MarqueeBanner />
+      <LibraryShell
+        items={items}
+        categories={categories}
+        initialRecommended={initialRecommended}
+        isLoggedIn={!!user}
+        userNickname={user?.nickname ?? ""}
+        hotItems={hotItems}
+        seed={randomUUID().split("-").reduce((acc, part) => (acc ^ parseInt(part, 16)) >>> 0, 0)}
+        initialQuery={q ?? ""}
+        footer={<SiteFooter />}
+      />
+    </>
   );
 }

@@ -128,3 +128,17 @@
     @apply font-sans;
   }
 }
+/* ---------- 首页顶部跑马灯 ---------- */
+@keyframes wenan-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  animation: wenan-marquee 32s linear infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
