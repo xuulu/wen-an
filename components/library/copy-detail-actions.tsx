@@ -97,6 +97,14 @@ export function CopyDetailActions({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      {/* 复制主按钮（最左，恢复修改前的布局） */}
+      <Button
+        onClick={handleCopy}
+        className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-5 text-white shadow-md shadow-cyan-500/20 hover:from-cyan-400 hover:to-blue-500"
+      >
+        {copied ? <Check /> : <Copy />}
+        {copied ? "已复制" : "一键复制"}
+      </Button>
       <Button
         variant="outline"
         onClick={handleToggleFavorite}
@@ -128,14 +136,6 @@ export function CopyDetailActions({
           </>
         )}
         {linkCopied ? "链接已复制" : "分享"}
-      </Button>
-      {/* 复制主按钮放最右，与首页卡片"复制在右侧"的直觉一致 */}
-      <Button
-        onClick={handleCopy}
-        className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-5 text-white shadow-md shadow-cyan-500/20 hover:from-cyan-400 hover:to-blue-500"
-      >
-        {copied ? <Check /> : <Copy />}
-        {copied ? "已复制" : "一键复制"}
       </Button>
     </div>
   );
