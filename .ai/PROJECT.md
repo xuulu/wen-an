@@ -44,7 +44,7 @@
 
 ## 目录要点
 
-- `app/`：App Router 页面与路由；根级 `sitemap.ts` / `robots.ts` / `manifest.ts` / `not-found.tsx`
+- `app/`：App Router 页面与路由；根级 `sitemap.ts` / `robots.ts` / `manifest.ts` / `not-found.tsx`；信息页 `/about` `/contact` `/copyright`（版权与侵权投诉）`/privacy` `/terms`，共享 `components/library/legal-page.tsx` 版式，页脚「帮助中心」统一入口
 - `lib/`：服务层（数据、认证、审核、SEO、主题、公告、限流等，均 server-only，除 theme.ts）
 - `components/ui/`：shadcn 生成组件（勿手改）；`components/admin|user|library|seo/`：业务组件
 - `db/schema.sql`：建表基线（幂等，统一 `wenan_` 前缀）；`db/migrations/`：增量迁移（编号 + rollback）

@@ -48,6 +48,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
+  // 信息类静态页（法律 / 协议页价值低，不进 sitemap，仍可被自然抓取）
+  for (const path of ["/about", "/contact"]) {
+    entries.push({
+      url: `${siteUrl}${path}`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.3,
+    });
+  }
+
   try {
     // 分类着陆页
     const categories = await getCategories();
