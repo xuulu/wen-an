@@ -1,14 +1,12 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, PenLine, Search, SearchX, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, PenLine, Search, SearchX } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { AppSidebar } from "@/components/library/app-sidebar";
 import { CopyCard } from "@/components/library/copy-card";
-import { CopyFormSheet } from "@/components/library/copy-form-sheet";
-import { DailyRecommend } from "@/components/library/daily-recommend";
-import { HotRanking } from "@/components/library/hot-ranking";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -20,6 +18,28 @@ import {
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { TopFavoritedItem } from "@/lib/copywriting-data";
 import type { Category, CopyItem } from "@/lib/copywriting";
+
+// ---- 分包懒加载（Web Vitals：控制首屏 JS）----
+// DailyRecommend / HotRanking：首屏下方内容，独立 chunk 加载，不影响 LCP 关键元素
+// CopyFormSheet：弹层按需打开，ssr:false 进一步砍掉首屏 JS 与 SSR 负担
+const DailyRecommend = dynamic(
+  () =>
+    import("@/components/library/daily-recommend").then(
+      (m) => m.DailyRecommend
+    ),
+  { ssr: true, loading: () => <div className="h-28" aria-hidden /> }
+);
+const HotRanking = dynamic(
+  () => import("@/components/library/hot-ranking").then((m) => m.HotRanking),
+  { ssr: true, loading: () => <div className="h-20" aria-hidden /> }
+);
+const CopyFormSheet = dynamic(
+  () =>
+    import("@/components/library/copy-form-sheet").then(
+      (m) => m.CopyFormSheet
+    ),
+  { ssr: false, loading: () => null }
+);
 
 interface LibraryShellProps {
   /** 服务端返回的第一页文案（后续翻页经 /api/copy 服务端加载） */
