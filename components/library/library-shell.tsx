@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, PenLine, Search, SearchX, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { AppSidebar } from "@/components/library/app-sidebar";
@@ -22,14 +22,23 @@ import type { TopFavoritedItem } from "@/lib/copywriting-data";
 import type { Category, CopyItem } from "@/lib/copywriting";
 
 interface LibraryShellProps {
-  items: CopyItem[];
+  /** 服务端返回的第一页文案（后续翻页经 /api/copy 服务端加载） */
+  initialItems: CopyItem[];
+  /** 当前视图总条数（服务端 COUNT） */
+  total: number;
   categories: Category[];
+  /** 各分类已上架数量（服务端聚合） */
+  categoryCounts: { id: string; count: number }[];
+  /** 当前用户收藏数（服务端聚合，未登录为 0） */
+  favoritesCount: number;
   initialRecommended: CopyItem | null;
   isLoggedIn: boolean;
   userNickname: string;
   hotItems: TopFavoritedItem[];
-  /** 服务端每次请求生成的随机种子（F5 重新请求即换种子） */
-  seed: number;
+  /** 服务端生成的随机种子：同种子分页顺序稳定，F5 重新随机 */
+  randomSeed: number;
+  /** 排序模式（与服务端一致）：random / updated */
+  sortMode?: "random" | "updated";
   /** 进入时默认选中的分类（/category/[id] 页传入；首页为 all） */
   initialCategoryId?: string;
   /** 初始搜索词（来自 URL ?q=，如 404 页搜索框跳转） */
@@ -38,31 +47,8 @@ interface LibraryShellProps {
   footer?: React.ReactNode;
 }
 
-/** 首页网格每页条数（客户端分页） */
+/** 服务端分页页大小（与页面文件一致） */
 const PAGE_SIZE = 50;
-
-/** mulberry32 种子化 PRNG：同种子序列可复现，不同种子序列不同 */
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-/** 基于种子的 Fisher–Yates 洗牌 */
-function shuffleStable<T>(list: T[], seed: number): T[] {
-  const rand = mulberry32(seed);
-  const next = list.slice();
-  for (let i = next.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [next[i], next[j]] = [next[j], next[i]];
-  }
-  return next;
-}
 
 /** 分页跳页输入：输入页码回车跳转 */
 function PageJump({
@@ -93,24 +79,18 @@ function PageJump({
   );
 }
 
-/** 简单字符串哈希（用于区分各分类的随机序列） */
-function hashString(value: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < value.length; i++) {
-    h ^= value.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
 export function LibraryShell({
-  items,
+  initialItems,
+  total: initialTotal,
   categories,
+  categoryCounts,
+  favoritesCount: initialFavoritesCount,
   initialRecommended,
   isLoggedIn,
   userNickname,
   hotItems,
-  seed,
+  randomSeed,
+  sortMode = "random",
   initialCategoryId = "all",
   initialQuery = "",
   footer,
@@ -121,25 +101,89 @@ export function LibraryShell({
   // 通过 render 阶段比对把外部 prop 变化同步进 state（不用 effect，避免 setState-in-effect）
   const [routeCategory, setRouteCategory] = useState(initialCategoryId);
   const [query, setQuery] = useState(initialQuery);
+  // 防抖后的搜索词（触发服务端加载）
+  const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
   const [page, setPage] = useState(1);
   const [newSheetOpen, setNewSheetOpen] = useState(false);
+  const [localItems, setLocalItems] = useState<CopyItem[]>(initialItems);
+  const [total, setTotal] = useState(initialTotal);
+  const [loading, setLoading] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
-    () => new Set(items.filter((item) => item.favorite).map((item) => item.id))
+    () => new Set(initialItems.filter((item) => item.favorite).map((item) => item.id))
   );
-  const [hotFilterId, setHotFilterId] = useState<string | null>(null);
-  // 本地文案列表：投稿新建后立即插入，实时刷新，不必等整页重载
-  const [localItems, setLocalItems] = useState<CopyItem[]>(items);
+  const [favoritesCount, setFavoritesCount] = useState(initialFavoritesCount);
+  // 请求竞态保护：只接受最新一次请求的结果
+  const requestSeq = useRef(0);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 首次挂载：SSR 已渲染第一页，跳过初始请求
+  const firstRender = useRef(true);
 
   if (routeCategory !== initialCategoryId) {
     setRouteCategory(initialCategoryId);
     setActiveId(initialCategoryId);
-    setHotFilterId(null);
     setPage(1);
   }
   // URL 搜索词同步：404 页搜索框跳转 /?q= 后，把服务端传来的初始词同步进 state
   if (routeCategory === initialCategoryId && initialQuery && query !== initialQuery) {
     setQuery(initialQuery);
+    setDebouncedQuery(initialQuery);
   }
+
+  /** 服务端加载一页：视图(分类/收藏/全部) + 搜索 + 种子排序 全部在数据库完成 */
+  async function loadPage(
+    targetPage: number,
+    viewId: string,
+    keyword: string
+  ) {
+    const seq = ++requestSeq.current;
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: String(targetPage),
+        pageSize: String(PAGE_SIZE),
+        categoryId: viewId,
+        seed: String(randomSeed),
+        sort: sortMode,
+      });
+      if (keyword.trim()) params.set("search", keyword.trim());
+      const res = await fetch(`/api/copy?${params.toString()}`);
+      const data = (await res.json()) as { items: CopyItem[]; total: number };
+      if (seq !== requestSeq.current) return; // 过期响应丢弃
+      setLocalItems(data.items);
+      setTotal(data.total);
+    } finally {
+      if (seq === requestSeq.current) setLoading(false);
+    }
+  }
+
+  // 搜索防抖 300ms 后服务端加载（回第 1 页）
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 300);
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+    };
+  }, [query]);
+
+  // 防抖搜索词变化 → 回第 1 页服务端加载（SSR 已带初始词渲染时跳过）
+  useEffect(() => {
+    if (firstRender.current && debouncedQuery === initialQuery) return;
+    setPage(1);
+    loadPage(1, activeId, debouncedQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery]);
+
+  // 页码变化 → 服务端加载（首次挂载由 SSR 提供，跳过）
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    loadPage(page, activeId, debouncedQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   const categoryMap = useMemo(
     () => new Map(categories.map((category) => [category.id, category])),
@@ -152,48 +196,17 @@ export function LibraryShell({
         id: category.id,
         label: category.label,
         color: category.color,
-        count: localItems.filter((item) => item.categoryId === category.id).length,
+        count:
+          categoryCounts.find((c) => c.id === category.id)?.count ?? 0,
       })),
-    [categories, localItems]
+    [categories, categoryCounts]
   );
 
-  const visibleItems = useMemo(() => {
-    const keyword = query.trim().toLowerCase();
-    const matchesKeyword = (item: CopyItem) =>
-      !keyword ||
-      item.title.toLowerCase().includes(keyword) ||
-      item.content.toLowerCase().includes(keyword);
-
-    return localItems.filter((item) => {
-      // 热门过滤是显式的单条定位，优先于分类/收藏限制
-      if (hotFilterId) return item.id === hotFilterId && matchesKeyword(item);
-      if (activeId === "favorites" && !favoriteIds.has(item.id)) return false;
-      if (
-        activeId !== "all" &&
-        activeId !== "favorites" &&
-        item.categoryId !== activeId
-      )
-        return false;
-      return matchesKeyword(item);
-    });
-  }, [activeId, favoriteIds, hotFilterId, localItems, query]);
-
-  const totalPages = Math.max(1, Math.ceil(visibleItems.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  // 每次进入该视图（全部或某分类）时洗牌，翻页顺序稳定；刷新页面/切换分类重新随机
-  // 每个视图（全部/某分类）用不同种子：基础种子叠加视图 id 哈希，翻页顺序稳定
-  const shuffledItems = useMemo(
-    () => shuffleStable(visibleItems, seed ^ hashString(activeId)),
-    [visibleItems, seed, activeId]
-  );
-  const pagedItems = useMemo(
-    () => shuffledItems.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
-    [shuffledItems, safePage]
-  );
 
-  const activeLabel = hotFilterId
-    ? "热门文案"
-    : activeId === "all"
+  const activeLabel =
+    activeId === "all"
       ? "全部文案"
       : activeId === "favorites"
         ? "我的收藏"
@@ -201,20 +214,13 @@ export function LibraryShell({
 
   function handleSelectCategory(id: string) {
     setActiveId(id);
-    // 切分类必须退出热门单条过滤，否则新分类（含当前分类再次点击）列表为空、搜索失效
-    setHotFilterId(null);
     setPage(1);
+    loadPage(1, id, debouncedQuery);
   }
 
-  /** 点击热门收藏榜：只过滤出该条文案 */
+  /** 点击热门收藏榜：跳转详情页（服务端分页下不做客户端单条过滤） */
   function handleHotSelect(id: string) {
-    setHotFilterId(id);
-    setPage(1);
-  }
-
-  function clearHotFilter() {
-    setHotFilterId(null);
-    setPage(1);
+    router.push(`/copy/${id}`);
   }
 
   function handleContribute() {
@@ -222,20 +228,17 @@ export function LibraryShell({
     else router.push("/user/login");
   }
 
-  /** 投稿成功：插入列表顶部并跳到全部视图，实时可见（待审文案仍标注状态） */
+  /** 投稿成功：插入当前列表顶部并回到全部视图第 1 页，实时可见 */
   function handleItemSaved(newItem: CopyItem) {
     setLocalItems((prev) =>
       prev.some((item) => item.id === newItem.id) ? prev : [newItem, ...prev]
     );
-    setHotFilterId(null);
     setQuery("");
+    setDebouncedQuery("");
     setPage(1);
-    // 在分类页投稿后回到首页，避免 URL 与「全部」视图不一致
-    if (initialCategoryId !== "all") {
+    if (activeId !== "all") {
       setActiveId("all");
       router.push("/");
-    } else {
-      setActiveId("all");
     }
   }
 
@@ -254,6 +257,7 @@ export function LibraryShell({
       else next.delete(id);
       return next;
     });
+    setFavoritesCount((prev) => Math.max(0, prev + (willFavorite ? 1 : -1)));
 
     try {
       if (willFavorite) {
@@ -280,6 +284,7 @@ export function LibraryShell({
         else next.add(id);
         return next;
       });
+      setFavoritesCount((prev) => Math.max(0, prev + (willFavorite ? -1 : 1)));
     }
   }
 
@@ -288,8 +293,8 @@ export function LibraryShell({
       <SidebarProvider>
         <AppSidebar
           activeId={activeId}
-          totalCount={localItems.length}
-          favoriteCount={favoriteIds.size}
+          totalCount={total}
+          favoriteCount={favoritesCount}
           categories={sidebarCategories}
           onSelect={handleSelectCategory}
           isLoggedIn={isLoggedIn}
@@ -306,7 +311,6 @@ export function LibraryShell({
                 onChange={(event) => {
                   const value = event.target.value;
                   setQuery(value);
-                  setHotFilterId(null);
                   setPage(1);
                   // 同步 URL（不触发导航）：404 搜索框提交到 /?q= 后，地址栏与输入一致
                   const url = new URL(window.location.href);
@@ -353,24 +357,18 @@ export function LibraryShell({
                     {activeLabel}
                   </h1>
                   <p className="font-mono text-xs text-muted-foreground">
-                    {visibleItems.length} ITEMS
+                    {total} ITEMS
                   </p>
                 </div>
-                {hotFilterId && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={clearHotFilter}
-                  >
-                    <X />
-                    返回全部文案
-                  </Button>
-                )}
               </div>
 
-              {pagedItems.length > 0 ? (
+              {loading ? (
+                <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">
+                  加载中…
+                </div>
+              ) : localItems.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-5 xl:grid-cols-3">
-                  {pagedItems.map((item) => {
+                  {localItems.map((item) => {
                     const category = categoryMap.get(item.categoryId);
                     return (
                       <CopyCard
@@ -398,6 +396,7 @@ export function LibraryShell({
                       size="sm"
                       onClick={() => {
                         setQuery("");
+                        setDebouncedQuery("");
                         setPage(1);
                       }}
                     >
@@ -412,7 +411,7 @@ export function LibraryShell({
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={safePage <= 1}
+                    disabled={safePage <= 1 || loading}
                     onClick={() => setPage((p) => p - 1)}
                   >
                     <ChevronLeft />
@@ -425,7 +424,7 @@ export function LibraryShell({
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={safePage >= totalPages}
+                    disabled={safePage >= totalPages || loading}
                     onClick={() => setPage((p) => p + 1)}
                   >
                     下一页

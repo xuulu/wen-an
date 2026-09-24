@@ -49,6 +49,10 @@ export interface CopyItemsOptions {
   status?: "all" | CopyStatus;
   /** 只看某个用户创建的文案（用户后台「我的投稿」） */
   createdBy?: number;
+  /** 排序：updated（默认，时间倒序）/ random（按 randomSeed 确定性随机，翻页稳定） */
+  sort?: "updated" | "random";
+  /** sort="random" 时的随机种子（整数）；同种子排序稳定，换种子重新随机 */
+  randomSeed?: number;
 }
 
 function formatDate(value: Date | string, kind: "date" | "datetime" = "date"): string {
@@ -162,6 +166,8 @@ export async function getCopyItems(
     search,
     status = "approved",
     createdBy,
+    sort = "updated",
+    randomSeed,
   } = options;
 
   const onlyFavorites = categoryId === "favorites";
@@ -272,6 +278,15 @@ export async function getCopyItems(
     limitSql = ` LIMIT ${limit} OFFSET ${offset}`;
   }
 
+  // 排序：random 用 md5(id+seed) 做确定性随机（同种子翻页稳定、换种子重新随机），
+  // 由数据库完成随机排序，客户端不再全量洗牌，支持服务端分页
+  let orderSql = "ORDER BY c.updated_at DESC, c.id DESC";
+  let orderParams: unknown[] = [];
+  if (sort === "random" && randomSeed !== undefined) {
+    orderParams = [String(Math.floor(randomSeed))];
+    orderSql = `ORDER BY md5(c.id::text || $${selectParams.length + 1}), c.id`;
+  }
+
   const sql = `
     SELECT
       c.id,
@@ -288,11 +303,14 @@ export async function getCopyItems(
     FROM wenan_copy_items c
     JOIN wenan_categories cat ON cat.id = c.category_id
     ${selectWhere}
-    ORDER BY c.updated_at DESC, c.id DESC
+    ${orderSql}
     ${limitSql}
   `;
 
-  const { rows } = await query<CopyItemRow>(sql, selectParams);
+  const { rows } = await query<CopyItemRow>(sql, [
+    ...selectParams,
+    ...orderParams,
+  ]);
 
   return {
     items: rows.map((row) => ({
@@ -307,6 +325,31 @@ export async function getCopyItems(
     })),
     total,
   };
+}
+
+/** 各分类已上架文案数量（侧栏分类徽标，轻量聚合，避免全量拉取） */
+export async function getCategoryCounts(): Promise<{ id: string; count: number }[]> {
+  const { rows } = await query<{ id: number; count: number }>(
+    `SELECT cat.id, COUNT(c.id)::int AS count
+     FROM wenan_categories cat
+     LEFT JOIN wenan_copy_items c ON c.category_id = cat.id AND c.status = 'approved'
+     GROUP BY cat.id
+     ORDER BY cat.sort_order ASC, cat.id ASC`
+  );
+  return rows.map((row) => ({ id: String(row.id), count: row.count }));
+}
+
+/** 当前用户已上架收藏数（侧栏收藏徽标） */
+export async function getFavoritesCount(userId: number): Promise<number> {
+  if (userId <= 0) return 0;
+  const { rows } = await query<{ total: number }>(
+    `SELECT COUNT(*)::int AS total
+     FROM wenan_user_favorites f
+     JOIN wenan_copy_items c ON c.id = f.copy_id
+     WHERE f.user_id = $1 AND c.status = 'approved'`,
+    [userId]
+  );
+  return rows[0]?.total ?? 0;
 }
 
 /** 按文案 id 查询单条 */

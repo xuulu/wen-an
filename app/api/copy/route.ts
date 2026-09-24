@@ -3,7 +3,7 @@ import { getAdminUser, getCurrentUser } from "@/lib/auth";
 import { createCopyItem, getCopyItems } from "@/lib/copywriting-data";
 import type { CopyStatus } from "@/lib/copywriting";
 
-/** 公开：分页获取文案列表，支持关键词搜索（标题/正文/类目） */
+/** 公开：分页获取文案列表，支持关键词搜索（标题/正文/类目）、随机种子排序 */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
@@ -14,6 +14,13 @@ export async function GET(request: Request) {
   const categoryId = searchParams.get("categoryId") ?? "all";
   const search = searchParams.get("search")?.trim() || undefined;
   const requestedStatus = searchParams.get("status");
+  const sortParam = searchParams.get("sort");
+  const sort = sortParam === "random" ? "random" : "updated";
+  const seedRaw = Number(searchParams.get("seed"));
+  const randomSeed =
+    sort === "random" && Number.isFinite(seedRaw)
+      ? Math.floor(seedRaw)
+      : undefined;
 
   const [admin, currentUser] = await Promise.all([
     getAdminUser(),
@@ -38,6 +45,8 @@ export async function GET(request: Request) {
     pagination: { page, pageSize },
     search,
     status,
+    sort,
+    randomSeed,
   });
   return NextResponse.json(result);
 }
