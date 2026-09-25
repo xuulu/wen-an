@@ -300,12 +300,15 @@ export async function getCopyItems(
       c.status,
       c.updated_at,
       c.review_reason,
+      c.user_id,
+      u.nickname AS author_name,
       EXISTS (
         SELECT 1 FROM wenan_user_favorites f
         WHERE f.copy_id = c.id AND f.user_id = $1
       ) AS is_favorite
     FROM wenan_copy_items c
     JOIN wenan_categories cat ON cat.id = c.category_id
+    LEFT JOIN wenan_users u ON u.id = c.user_id
     ${selectWhere}
     ${orderSql}
     ${limitSql}
@@ -326,6 +329,13 @@ export async function getCopyItems(
       status: row.status,
       updatedAt: formatDate(row.updated_at),
       reviewReason: row.review_reason,
+      // 投稿人信息：仅用户投稿（user_id 非空）时返回，公共预置文案忽略
+      ...(row.user_id
+        ? {
+            authorId: String(row.user_id),
+            authorName: row.author_name ?? `用户${row.user_id}`,
+          }
+        : {}),
     })),
     total,
   };

@@ -66,7 +66,7 @@ export function CopyCard({
         }}
       />
 
-      {/* 元信息行：类目 · 日期 */}
+      {/* 元信息行：类目 · 投稿人（有则显示）；时间放底部，避免重复 */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2 font-mono text-[11px] text-muted-foreground">
           <span
@@ -74,8 +74,14 @@ export function CopyCard({
             style={{ backgroundColor: categoryColor }}
           />
           <span className="truncate">{categoryLabel}</span>
-          <span className="text-foreground/20">/</span>
-          <span className="shrink-0">{item.updatedAt}</span>
+          {item.authorId && (
+            <>
+              <span className="text-foreground/20">/</span>
+              <span className="shrink-0 truncate text-muted-foreground/70">
+                {item.authorName}
+              </span>
+            </>
+          )}
         </div>
         <Button
           variant="ghost"
@@ -108,8 +114,11 @@ export function CopyCard({
         {item.content}
       </p>
 
-      {/* 底部：复制（时间已在顶部元信息行显示，不重复） */}
-      <div className="mt-auto flex items-center justify-end gap-3 pt-5">
+      {/* 底部：时间 · 复制（时间唯一展示在这里） */}
+      <div className="mt-auto flex items-center justify-between gap-3 pt-5">
+        <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-muted-foreground/60">
+          {item.updatedAt}
+        </span>
         <Button
           variant="outline"
           size="sm"
