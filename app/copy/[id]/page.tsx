@@ -154,20 +154,18 @@ export default async function CopyPage({ params }: CopyPageProps) {
                 </>
               )}
               <span>{item.updatedAt}</span>
-              <span className="text-foreground/20">/</span>
-              {/* 作者信息：用户投稿显示投稿人昵称；公共文案显示「官方内容」，任何文案都有作者行 */}
-              {item.authorId ? (
-                <span className="text-muted-foreground/80">
-                  投稿人：{item.authorName}
-                </span>
-              ) : (
-                <span className="text-muted-foreground/60">官方内容</span>
-              )}
             </div>
 
             <div className="mt-6 whitespace-pre-wrap text-[15px] leading-loose text-foreground/90">
               {item.content}
             </div>
+
+            {/* 署名：仅用户投稿时在正文右下角显示，公共文案留空 */}
+            {item.authorId && (
+              <p className="mt-4 text-right font-mono text-xs text-muted-foreground/60">
+                - 投稿人：{item.authorName}
+              </p>
+            )}
 
             <div className="mt-8 border-t pt-6">
               <CopyDetailActions
