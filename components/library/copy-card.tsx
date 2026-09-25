@@ -108,11 +108,8 @@ export function CopyCard({
         {item.content}
       </p>
 
-      {/* 底部：复制 */}
-      <div className="mt-auto flex items-center justify-between gap-3 pt-5">
-        <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-muted-foreground/60">
-          {item.updatedAt}
-        </span>
+      {/* 底部：复制（时间已在顶部元信息行显示，不重复） */}
+      <div className="mt-auto flex items-center justify-end gap-3 pt-5">
         <Button
           variant="outline"
           size="sm"

@@ -44,8 +44,10 @@ export function MarqueeBanner({
       style={{ "--marquee-duration": `${safeSpeed}s` } as React.CSSProperties}
     >
       {/* 背景条完整铺满左右（不做 mask，否则两端渐隐会透出页面背景 = 白边）；
-          mask 只加在内层滚动文字容器，让文字两端平滑进出 */}
-      <div className="absolute inset-0 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_2%,black_98%,transparent)]">
+          mask 只加在内层滚动文字容器，让文字两端平滑进出。
+          注意：内层是 absolute，不参与外层 flex 排列，必须自带 flex items-center
+          才能让文字垂直居中（否则文字贴顶） */}
+      <div className="absolute inset-0 flex items-center overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_2%,black_98%,transparent)]">
         {/* 无缝滚动：轨道 = 左右两个完全相同的半段，translateX(-50%) 循环 */}
         <div className="marquee-track flex w-max items-center whitespace-nowrap">
           <MarqueeGroup line={line} />
