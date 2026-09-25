@@ -40,13 +40,17 @@ export function MarqueeBanner({
 
   return (
     <div
-      className="relative flex h-9 w-full items-center overflow-hidden border-b bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 text-slate-200 [mask-image:linear-gradient(to_right,transparent,black_4%,black_96%,transparent)]"
+      className="relative flex h-9 w-full items-center border-b bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 text-slate-200"
       style={{ "--marquee-duration": `${safeSpeed}s` } as React.CSSProperties}
     >
-      {/* 无缝滚动：轨道 = 左右两个完全相同的半段，translateX(-50%) 循环 */}
-      <div className="marquee-track flex w-max items-center whitespace-nowrap">
-        <MarqueeGroup line={line} />
-        <MarqueeGroup line={line} />
+      {/* 背景条完整铺满左右（不做 mask，否则两端渐隐会透出页面背景 = 白边）；
+          mask 只加在内层滚动文字容器，让文字两端平滑进出 */}
+      <div className="absolute inset-0 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_2%,black_98%,transparent)]">
+        {/* 无缝滚动：轨道 = 左右两个完全相同的半段，translateX(-50%) 循环 */}
+        <div className="marquee-track flex w-max items-center whitespace-nowrap">
+          <MarqueeGroup line={line} />
+          <MarqueeGroup line={line} />
+        </div>
       </div>
       {/* 无障碍静态副本：屏幕阅读器可读 */}
       <p className="sr-only">{line}</p>
