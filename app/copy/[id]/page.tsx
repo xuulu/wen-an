@@ -17,6 +17,7 @@ import {
   buildSeoMetadata,
   creativeWorkJsonLd,
   getSeoContext,
+  websiteJsonLd,
 } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -67,6 +68,11 @@ export default async function CopyPage({ params }: CopyPageProps) {
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
+      websiteJsonLd({
+        name: seo.siteName,
+        description: seo.settings.seo_description,
+        siteUrl: siteUrl || undefined,
+      }),
       creativeWorkJsonLd({
         title: item.title,
         content: item.content,

@@ -19,6 +19,7 @@ import {
   buildSeoMetadata,
   getSeoContext,
   itemListJsonLd,
+  websiteJsonLd,
 } from "@/lib/seo";
 import type { CopyItem } from "@/lib/copywriting";
 
@@ -98,12 +99,18 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const heading = categoryHeading(category.label);
 
   // 对外域名：后台 site_url → SITE_URL env → 空（绝不输出 localhost）
-  const { siteUrl } = await getSeoContext();
+  const seoContext = await getSeoContext();
+  const { siteUrl } = seoContext;
 
-  // JSON-LD：ItemList（前 20 条）+ 面包屑，供搜索结果增强展现
+  // JSON-LD：全站 WebSite + ItemList（前 20 条）+ 面包屑，合并为单 @graph（每页仅一个 ld+json 标签）
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
+      websiteJsonLd({
+        name: seoContext.siteName,
+        description: seoContext.settings.seo_description,
+        siteUrl: siteUrl || undefined,
+      }),
       itemListJsonLd({
         name: heading,
         description: `${category.label}精选合集`,

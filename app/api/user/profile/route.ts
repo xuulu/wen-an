@@ -9,6 +9,7 @@ import {
   verifyPassword,
 } from "@/lib/auth";
 import { query } from "@/lib/db";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * PATCH：登录用户修改用户名（nickname）和/或密码。
@@ -19,6 +20,18 @@ export async function PATCH(request: Request) {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "请先登录" }, { status: 401 });
+  }
+
+  // 应用层内存限流兜底（与 middleware 策略一致，Upstash 未配置时仍有限流）
+  const limited = rateLimit(`profile:${user.id}`, 10, 60 * 60 * 1000);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "修改过于频繁，请稍后再试" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limited.retryAfter) },
+      }
+    );
   }
 
   const body = (await request.json().catch(() => null)) as {

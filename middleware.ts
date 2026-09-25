@@ -39,6 +39,9 @@ const POLICIES = {
   // 批量删除（单请求可含多条，按请求计）、注销（极敏感，从严）
   delete: { limit: 10, window: "1 h", prefix: "wenan:delete" },
   deactivate: { limit: 3, window: "1 h", prefix: "wenan:deactivate" },
+  // 反馈提交（防刷工单）、资料修改（防批量改资料）
+  feedback: { limit: 5, window: "1 h", prefix: "wenan:feedback" },
+  profile: { limit: 10, window: "1 h", prefix: "wenan:profile" },
 } as const;
 
 type PolicyKey = keyof typeof POLICIES;
@@ -61,6 +64,12 @@ function matchPolicy(request: NextRequest): PolicyKey | null {
   }
   if (pathname === "/api/user/deactivate" && request.method === "POST") {
     return "deactivate";
+  }
+  if (pathname === "/api/feedbacks" && request.method === "POST") {
+    return "feedback";
+  }
+  if (pathname === "/api/user/profile" && request.method === "PATCH") {
+    return "profile";
   }
   return null;
 }

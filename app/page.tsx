@@ -14,7 +14,11 @@ import {
   getFavoritesCount,
   getTopFavorited,
 } from "@/lib/copywriting-data";
-import { buildSeoMetadata, getSeoContext } from "@/lib/seo";
+import {
+  buildSeoMetadata,
+  getSeoContext,
+  websiteJsonLd,
+} from "@/lib/seo";
 import { getSiteSettings } from "@/lib/site-settings";
 import type { CopyItem } from "@/lib/copywriting";
 
@@ -77,12 +81,17 @@ export default async function Home({
   const settings = await getSiteSettings();
   const marqueeSpeed = Number(settings.marquee_speed_seconds) || 32;
 
-  // 首页结构化数据：WebPage（含搜索意图）+ Organization，不重复根布局的 WebSite
+  // 首页结构化数据：全站 WebSite + 页面 WebPage + Organization 合并为单 @graph（每页仅一个 ld+json 标签）
   const seoContext = await getSeoContext();
   const { siteUrl } = seoContext;
   const homepageJsonLd = {
     "@context": "https://schema.org",
     "@graph": [
+      websiteJsonLd({
+        name: seoContext.siteName,
+        description: seoContext.settings.seo_description,
+        siteUrl: siteUrl || undefined,
+      }),
       {
         "@type": "WebPage",
         name: `${seoContext.siteName} - ${seoContext.settings.site_title_suffix}`,

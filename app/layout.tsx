@@ -95,32 +95,10 @@ export const viewport: Viewport = {
 export default async function RootLayout({
   children,
 }: LayoutProps<"/">) {
-  const settings = await getSiteSettings();
-  const siteUrl = resolveSiteUrl(settings);
   // 主题：SSR 从 cookie 解析（system 时 class 由首帧脚本定，SSR 不输出主题类，避免 hydration 冲突）
   const store = await cookies();
   const themeName = resolveTheme(store.get("wenan-theme")?.value);
   const isDarkSsr = themeName === "dark";
-  const jsonLd: Record<string, unknown> = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: settings.site_name,
-    description: settings.seo_description,
-    inLanguage: "zh-CN",
-    ...(siteUrl
-      ? {
-          url: siteUrl,
-          potentialAction: {
-            "@type": "SearchAction",
-            target: {
-              "@type": "EntryPoint",
-              urlTemplate: `${siteUrl}/?q={search_term_string}`,
-            },
-            "query-input": "required name=search_term_string",
-          },
-        }
-      : {}),
-  };
 
   return (
     <html
@@ -136,10 +114,6 @@ export default async function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider initialTheme={themeName}>{children}</ThemeProvider>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
       </body>
     </html>
   );

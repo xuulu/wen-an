@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getAdminUser, getCurrentUser } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 import {
   closeMyFeedback,
   createFeedback,
@@ -44,6 +45,18 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "请先登录后再提交" }, { status: 401 });
+  }
+
+  // 应用层内存限流兜底（Upstash Redis 未配置时 middleware 会放行，这里保证仍有限流）
+  const limited = rateLimit(`feedback:${user.id}`, 5, 60 * 60 * 1000);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "反馈提交过于频繁，请稍后再试" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limited.retryAfter) },
+      }
+    );
   }
 
   const body = (await request.json().catch(() => null)) as {

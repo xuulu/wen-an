@@ -118,6 +118,37 @@ export async function buildSeoMetadata(
 
 /* ---------------- JSON-LD 构建器（返回结构化对象，交由 <JsonLd> 安全渲染） ---------------- */
 
+/**
+ * 全站 WebSite schema（站级信息，由各页面并入 @graph 首项，
+ * 保证每页只输出一个 ld+json 标签，不重复挂站点标签）
+ */
+export function websiteJsonLd(options: {
+  name: string;
+  description?: string;
+  siteUrl?: string;
+}): Record<string, unknown> {
+  const { name, description, siteUrl } = options;
+  return {
+    "@type": "WebSite",
+    name,
+    ...(description ? { description } : {}),
+    inLanguage: "zh-CN",
+    ...(siteUrl
+      ? {
+          url: siteUrl,
+          potentialAction: {
+            "@type": "SearchAction",
+            target: {
+              "@type": "EntryPoint",
+              urlTemplate: `${siteUrl}/?q={search_term_string}`,
+            },
+            "query-input": { "@type": "PropertyValueSpecification", valueRequired: true, valueName: "search_term_string" },
+          },
+        }
+      : {}),
+  };
+}
+
 export interface BreadcrumbEntry {
   name: string;
   /** 相对路径（如 /copy/1）或完整 URL；无站点域名时省略 item 字段 */
