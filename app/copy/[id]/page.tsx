@@ -154,14 +154,14 @@ export default async function CopyPage({ params }: CopyPageProps) {
                 </>
               )}
               <span>{item.updatedAt}</span>
-              {/* 作者昵称：仅用户投稿（有 authorId）时显示，公共预置文案保持留空 */}
-              {item.authorId && (
-                <>
-                  <span className="text-foreground/20">/</span>
-                  <span className="text-muted-foreground/80">
-                    投稿人：{item.authorName}
-                  </span>
-                </>
+              <span className="text-foreground/20">/</span>
+              {/* 作者信息：用户投稿显示投稿人昵称；公共文案显示「官方内容」，任何文案都有作者行 */}
+              {item.authorId ? (
+                <span className="text-muted-foreground/80">
+                  投稿人：{item.authorName}
+                </span>
+              ) : (
+                <span className="text-muted-foreground/60">官方内容</span>
               )}
             </div>
 
