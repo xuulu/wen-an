@@ -23,13 +23,17 @@ nginx -t && systemctl reload nginx
 | 路径 | 类型 | 处理 |
 |---|---|---|
 | `/` 及所有页面路由 | 页面（App Router 动态渲染） | 转发 `127.0.0.1:3000` |
-| `/_next/static/` | Next.js 构建静态产物 | 转发 + 1 年 immutable 缓存 |
-| `/_next/image` | Next.js 内置图片优化 | 转发 + 24h 缓存 |
+| `/_next/static/` | Next.js 构建静态产物 | 转发 + 1 年 immutable 缓存 + CDN-Cache-Control |
+| `/_next/image` | Next.js 内置图片优化 | 转发 + 24h 缓存 + CDN 层识别头 |
 | `/api/*` | 业务 API（含注册/登录/投稿/限流/公告 `GET /api/announcements`、管理端 `GET|POST /api/admin/announcements`、`PUT|DELETE /api/admin/announcements/[id]`） | 转发，透传真实 IP（X-Forwarded-For） |
-| `/uploads/*` | 用户上传图片（存项目根 `storage/uploads`，由 `app/uploads/[filename]` Route Handler 读取） | 转发，Handler 已带 immutable 缓存 / nosniff |
+| `/api/categories`、`/api/announcements`（GET） | 公开只读 API | 应用层已设 `Cache-Control: public, max-age=300`，Nginx 勿覆盖 |
+| `/api/copy`（GET） | 公开列表但含登录用户收藏态 | 应用层已设 `Cache-Control: no-store`，**禁止任何层缓存**（防串用户数据） |
+| `/uploads/*` | 用户上传图片（存项目根 `storage/uploads`，由 `app/uploads/[filename]` Route Handler 读取） | 转发，Handler 已带 7 天 immutable 缓存 / nosniff |
 | `/sitemap.xml` | 动态生成（每日 revalidate） | 转发 + 86400 缓存 |
 | `/robots.txt` | 动态生成 | 转发 + 86400 缓存 |
 | WebSocket / SSE | 预留（当前无服务） | 见配置内 `location /` 的 upgrade 模板 |
+
+> **缓存策略总原则（2026-09-29 起）**：新增/修改 API 时必须在 route handler 内显式设置 `Cache-Control` —— 公开只读接口可设 `public, max-age=300`；凡响应依赖登录态（收藏/反馈/管理端/用户数据）一律 `no-store`；写操作一律 `no-store`。Nginx 只在 `/_next/static`、`/_next/image`、`/sitemap.xml`、`/robots.txt` 设缓存，其余交给应用层，避免两层缓存规则打架。
 
 ## 维护约定（必读）
 

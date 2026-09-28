@@ -48,7 +48,11 @@ export async function GET(request: Request) {
     sort,
     randomSeed,
   });
-  return NextResponse.json(result);
+  // 列表响应含登录用户收藏态（is_favorite）且管理员可按 status 查看，
+  // 属于私有化响应：禁止 CDN/浏览器缓存，防止串用户数据。
+  return NextResponse.json(result, {
+    headers: { "Cache-Control": "no-store" },
+  });
 }
 
 /** 仅管理员：新建文案（公共文案，直接生效） */

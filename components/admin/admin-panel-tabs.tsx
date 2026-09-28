@@ -9,6 +9,7 @@ import {
   MessageSquareText,
   PenLine,
   Settings,
+  TerminalSquare,
 } from "lucide-react";
 
 import { AIReviewManager } from "@/components/admin/ai-review-manager";
@@ -16,6 +17,7 @@ import { AnnouncementManager } from "@/components/admin/announcement-manager";
 import { CategoryManager } from "@/components/admin/category-manager";
 import { CopyManager } from "@/components/admin/copy-manager";
 import { FeedbackManager } from "@/components/admin/feedback-manager";
+import { OpenApiTester } from "@/components/admin/openapi-tester";
 import { SiteSettingsManager } from "@/components/admin/site-settings-manager";
 import { StatsOverview } from "@/components/admin/stats-overview";
 import type { Category } from "@/lib/copywriting";
@@ -28,7 +30,7 @@ import type {
 } from "@/lib/copywriting-data";
 
 /** 一级 tab */
-type TabKey = "overview" | "copy" | "station" | "settings";
+type TabKey = "overview" | "copy" | "station" | "settings" | "openapi";
 
 /** 「文案管理」下的二级 tab */
 type CopySubTab = "copy" | "categories" | "ai-review";
@@ -41,6 +43,7 @@ const TABS: { key: TabKey; label: string; icon: typeof PenLine }[] = [
   { key: "copy", label: "文案管理", icon: PenLine },
   { key: "station", label: "公告反馈", icon: Megaphone },
   { key: "settings", label: "站点设置", icon: Settings },
+  { key: "openapi", label: "接口测试", icon: TerminalSquare },
 ];
 
 const COPY_SUB_TABS: { key: CopySubTab; label: string; icon: typeof PenLine }[] = [
@@ -160,6 +163,9 @@ export function AdminPanelTabs({
       )}
 
       {tab === "settings" && <SiteSettingsManager />}
+
+      {/* 接口测试 */}
+      {tab === "openapi" && <OpenApiTester />}
     </div>
   );
 }

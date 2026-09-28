@@ -5,7 +5,13 @@ import { isValidHexColor } from "@/lib/copywriting";
 
 export async function GET() {
   const categories = await getCategories();
-  return NextResponse.json(categories);
+  // 公开只读：分类基本不变，浏览器/CDN 各缓存 5 分钟
+  return NextResponse.json(categories, {
+    headers: {
+      "Cache-Control":
+        "public, max-age=300, s-maxage=300, stale-while-revalidate=86400",
+    },
+  });
 }
 
 export async function POST(request: Request) {
