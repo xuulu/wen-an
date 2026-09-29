@@ -13,6 +13,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AiConnectionTest } from "@/components/admin/ai-connection-test";
 
 type SettingsMap = Record<string, string>;
 
@@ -415,6 +416,7 @@ export function AIReviewManager() {
                   onChange={(v) => set("ai_review_prompt", v)}
                 />
               </Field>
+              <AiConnectionTest />
             </div>
           </section>
         </div>
