@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { renderCustomHeadTags } from "@/lib/custom-head-tags";
 import {
   getSiteSettings,
   resolveSiteUrl,
@@ -99,6 +100,9 @@ export default async function RootLayout({
   const store = await cookies();
   const themeName = resolveTheme(store.get("wenan-theme")?.value);
   const isDarkSsr = themeName === "dark";
+  // 后台「站点设置 → 自定义元标签」：每行一条完整 HTML 标签（meta/link/script/style），
+  // 用于搜索引擎收录验证、访客统计等。仅管理员可写入（XSS 面 = 管理员本人）。
+  const customTags = await getSiteSettings().then((s) => s.custom_head_tags);
 
   return (
     <html
@@ -111,6 +115,8 @@ export default async function RootLayout({
       <head>
         {/* 防 FOUC：首帧前同步设置主题（与 SSR cookie 解析逻辑一致） */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* 自定义 head 标签（管理员后台配置，SSR 原样输出以便收录验证生效） */}
+        {renderCustomHeadTags(customTags)}
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider initialTheme={themeName}>{children}</ThemeProvider>

@@ -53,15 +53,18 @@ function TextareaField({
   rows = 2,
   value,
   onChange,
+  placeholder,
 }: {
   rows?: number;
   value: string;
   onChange: (value: string) => void;
+  placeholder?: string;
 }) {
   return (
     <textarea
       rows={rows}
       value={value}
+      placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
       className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
     />
@@ -285,6 +288,17 @@ export function SiteSettingsManager() {
             rows={2}
             value={settings.seo_keywords}
             onChange={(v) => set("seo_keywords", v)}
+          />
+        </Field>
+        <Field
+          label="自定义元标签（每行一条完整 HTML 标签）"
+          desc="用于搜索引擎收录验证（百度 / 必应 / Google Search Console）、访客统计（百度统计 / 51LA / GA 等）。支持 <meta>、<link>、<script>、<style>，保存后原样输出到全站 <head>（属性需使用双引号）"
+        >
+          <TextareaField
+            rows={8}
+            value={settings.custom_head_tags}
+            onChange={(v) => set("custom_head_tags", v)}
+            placeholder={`<meta name="baidu-site-verification" content="xxx" />\n<meta name="msvalidate.01" content="xxx" />\n<meta name="google-site-verification" content="xxx" />\n<script>/* 统计代码 */</script>`}
           />
         </Field>
       </Section>
