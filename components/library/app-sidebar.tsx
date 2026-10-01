@@ -56,6 +56,7 @@ interface AppSidebarProps {
   onSelect: (id: string) => void;
   isLoggedIn: boolean;
   userNickname: string;
+  siteName: string;
 }
 
 export function AppSidebar({
@@ -66,6 +67,7 @@ export function AppSidebar({
   onSelect,
   isLoggedIn,
   userNickname,
+  siteName,
 }: AppSidebarProps) {
   const { setOpenMobile } = useSidebar();
   const router = useRouter();
@@ -94,7 +96,7 @@ export function AppSidebar({
             <Library className="size-4" />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm leading-tight font-semibold">简心文案库</span>
+            <span className="text-sm leading-tight font-semibold">{siteName}</span>
             <span className="text-[10px] tracking-widest text-muted-foreground uppercase">
               Copy Console
             </span>

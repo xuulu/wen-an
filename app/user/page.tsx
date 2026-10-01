@@ -4,13 +4,17 @@ import { redirect } from "next/navigation";
 import { UserDashboard } from "@/components/user/user-dashboard";
 import { getCurrentUser } from "@/lib/auth";
 import { getCategories } from "@/lib/copywriting-data";
+import { getSiteSettings } from "@/lib/site-settings";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "个人中心 - 简心文案库",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  return {
+    title: `个人中心 - ${settings.site_name}`,
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function UserPage() {
   const user = await getCurrentUser();

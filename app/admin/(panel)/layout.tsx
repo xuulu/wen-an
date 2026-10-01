@@ -5,18 +5,25 @@ import { ArrowLeft } from "lucide-react";
 
 import { LogoutButton } from "@/components/admin/logout-button";
 import { getAdminUser } from "@/lib/auth";
+import { getSiteSettings } from "@/lib/site-settings";
 
-export const metadata: Metadata = {
-  title: "简心文案库管理后台",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  return {
+    title: `${settings.site_name}管理后台`,
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function AdminPanelLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getAdminUser();
+  const [user, settings] = await Promise.all([
+    getAdminUser(),
+    getSiteSettings(),
+  ]);
   if (!user) {
     redirect("/admin/login");
   }
@@ -33,7 +40,9 @@ export default async function AdminPanelLayout({
               <ArrowLeft className="size-4" />
               返回前台
             </Link>
-            <span className="text-sm font-semibold">简心文案库管理后台</span>
+            <span className="text-sm font-semibold">
+              {settings.site_name}管理后台
+            </span>
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-muted-foreground sm:inline">

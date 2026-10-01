@@ -143,6 +143,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         initialCategoryId={id}
         randomSeed={seed}
         sortMode="random"
+        siteName={seoContext.siteName}
         footer={<SiteFooter />}
       />
     </>

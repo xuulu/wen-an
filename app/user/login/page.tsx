@@ -2,11 +2,15 @@ import type { Metadata } from "next";
 
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { UserAuthForm } from "@/components/user/user-auth-form";
+import { getSiteSettings } from "@/lib/site-settings";
 
-export const metadata: Metadata = {
-  title: "登录 - 简心文案库",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  return {
+    title: `登录 - ${settings.site_name}`,
+    robots: { index: false, follow: false },
+  };
+}
 
 export default function UserLoginPage() {
   return (

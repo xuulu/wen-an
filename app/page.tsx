@@ -130,6 +130,7 @@ export default async function Home({
         randomSeed={seed}
         sortMode="random"
         initialQuery={q ?? ""}
+        siteName={seoContext.siteName}
         footer={<SiteFooter />}
       />
     </>

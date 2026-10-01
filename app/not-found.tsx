@@ -5,18 +5,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getCategories } from "@/lib/copywriting-data";
 import { getCategoryStyle } from "@/lib/copywriting";
+import { getSiteSettings } from "@/lib/site-settings";
 
 /** 品牌化 404：保持 404 状态码（App Router not-found.tsx 自动返回），
  *  提供搜索框 / 热门分类 / 返回首页，降低跳出率。 */
 export default async function NotFound() {
   const categories = await getCategories();
+  // 品牌文案跟随后台站点配置
+  const settings = await getSiteSettings();
+  const siteName = settings.site_name || "简心文案库";
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">
       {/* 顶部品牌条 */}
       <header className="flex items-center justify-between border-b px-5 py-3">
         <Link href="/" className="text-lg font-bold tracking-tight">
-          简心<span className="text-cyan-500">文案库</span>
+          {siteName.slice(0, 2)}
+          <span className="text-cyan-500">{siteName.slice(2)}</span>
         </Link>
         <Link
           href="/"
@@ -93,7 +98,7 @@ export default async function NotFound() {
       </main>
 
       <footer className="border-t px-5 py-4 text-center text-xs text-muted-foreground">
-        简心文案库 · 让每一次表达都有灵感
+        {settings.footer_about || `${siteName} · 让每一次表达都有灵感`}
       </footer>
     </div>
   );

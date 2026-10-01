@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
 import { BookMarked } from "lucide-react";
 
+import { getSiteSettings } from "@/lib/site-settings";
+
 /**
  * 登录 / 注册页共用布局（简约科技风）：
  * 深色底 + 细网格 + 青蓝光斑 + 深色玻璃卡片
  */
-export function AuthLayout({
+export async function AuthLayout({
   title,
   description,
   children,
@@ -14,6 +16,9 @@ export function AuthLayout({
   description: string;
   children: ReactNode;
 }) {
+  // 品牌名跟随后台站点配置
+  const settings = await getSiteSettings();
+  const siteName = settings.site_name || "简心文案库";
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 p-4">
       {/* 细网格背景 */}
@@ -31,7 +36,7 @@ export function AuthLayout({
             <BookMarked className="size-5" />
           </div>
           <span className="text-base font-semibold tracking-wide">
-            简心文案库
+            {siteName}
           </span>
           <span className="mt-0.5 rounded border border-white/15 px-1.5 py-0.5 text-[10px] tracking-widest text-slate-400 uppercase">
             Console

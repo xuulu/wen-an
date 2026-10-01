@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 
 import { LegalPage } from "@/components/library/legal-page";
 import { buildSeoMetadata, getSeoContext } from "@/lib/seo";
+import { getSiteSettings } from "@/lib/site-settings";
 
 export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
   return buildSeoMetadata({
     title: "关于我们",
-    description:
-      "简心文案库是一个精选文案分享社区，提供朋友圈、短视频、节日祝福等分类文案的搜索、收藏与一键复制。",
+    description: `${settings.site_name}是一个精选文案分享社区，提供朋友圈、短视频、节日祝福等分类文案的搜索、收藏与一键复制。`,
     path: "/about",
   });
 }

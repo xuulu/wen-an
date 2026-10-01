@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 
 import { LegalPage } from "@/components/library/legal-page";
 import { buildSeoMetadata, getSeoContext } from "@/lib/seo";
+import { getSiteSettings } from "@/lib/site-settings";
 
 export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
   return buildSeoMetadata({
     title: "隐私政策",
-    description:
-      "简心文案库隐私政策：说明我们收集、使用、存储与保护个人信息的方式，以及您享有的权利。",
+    description: `${settings.site_name}隐私政策：说明我们收集、使用、存储与保护个人信息的方式，以及您享有的权利。`,
     path: "/privacy",
   });
 }

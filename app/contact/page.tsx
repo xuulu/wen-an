@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 
 import { LegalPage } from "@/components/library/legal-page";
 import { buildSeoMetadata, getSeoContext } from "@/lib/seo";
+import { getSiteSettings } from "@/lib/site-settings";
 
 export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
   return buildSeoMetadata({
     title: "联系我们",
-    description:
-      "联系简心文案库：投稿合作、意见反馈、版权与侵权投诉等事务的联系方式与处理说明。",
+    description: `联系${settings.site_name}：投稿合作、意见反馈、版权与侵权投诉等事务的联系方式与处理说明。`,
     path: "/contact",
   });
 }

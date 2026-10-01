@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 
 import { LegalPage } from "@/components/library/legal-page";
 import { buildSeoMetadata, getSeoContext } from "@/lib/seo";
+import { getSiteSettings } from "@/lib/site-settings";
 
 export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
   return buildSeoMetadata({
     title: "用户协议",
-    description:
-      "简心文案库用户协议（服务条款）：账号注册、行为规范、内容授权、内容审核与责任划分。",
+    description: `${settings.site_name}用户协议（服务条款）：账号注册、行为规范、内容授权、内容审核与责任划分。`,
     path: "/terms",
   });
 }

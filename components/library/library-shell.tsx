@@ -65,6 +65,8 @@ interface LibraryShellProps {
   initialQuery?: string;
   /** 页脚（服务端组件，由页面传入） */
   footer?: React.ReactNode;
+  /** 站点名称（后台配置，服务端传入） */
+  siteName: string;
 }
 
 /** 服务端分页页大小（与页面文件一致） */
@@ -114,6 +116,7 @@ export function LibraryShell({
   initialCategoryId = "all",
   initialQuery = "",
   footer,
+  siteName,
 }: LibraryShellProps) {
   const router = useRouter();
   const [activeId, setActiveId] = useState(initialCategoryId);
@@ -319,6 +322,7 @@ export function LibraryShell({
           onSelect={handleSelectCategory}
           isLoggedIn={isLoggedIn}
           userNickname={userNickname}
+          siteName={siteName}
         />
         <SidebarInset>
           <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background/80 px-3 backdrop-blur sm:gap-3 sm:px-4">
