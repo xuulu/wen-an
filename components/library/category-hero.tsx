@@ -4,11 +4,11 @@ import { ChevronRight, HelpCircle } from "lucide-react";
 import type { Category } from "@/lib/copywriting";
 
 /**
- * 分类页 SEO 头部区块（服务端组件）：
+ * 分类页 SEO 头部区块（服务端组件，作为 LibraryShell 的 hero 插槽渲染在搜索栏下方）：
  * - H1 分类名（分类着陆页唯一 h1）
  * - 分类简介（后台可填，空则用默认）
- * - 相关分类入口（其余分类，带数量，帮助爬虫发现更多分类页）
  * - 局部 FAQ（details 折叠，配合分类页 FAQPage JSON-LD，不机械复制到详情页）
+ * 注：相关分类入口已移除（页脚已有全站分类导航，避免重复链接稀释）
  */
 
 export function defaultCategoryDescription(label: string): string {
@@ -41,13 +41,10 @@ export function CategoryHero({
   category,
   description,
   count,
-  related,
 }: {
   category: Category;
   description: string;
   count: number;
-  /** 相关分类（不含当前分类） */
-  related: { category: Category; count: number }[];
 }) {
   const faqItems = categoryFaqItems(category.label);
 
@@ -78,29 +75,6 @@ export function CategoryHero({
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
           {description}
         </p>
-
-        {/* 相关分类入口 */}
-        {related.length > 0 && (
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <span className="shrink-0 text-xs text-muted-foreground">
-              相关分类：
-            </span>
-            {related.map(({ category: other, count: c }) => (
-              <Link
-                key={other.id}
-                href={`/category/${other.id}`}
-                className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs transition-colors hover:bg-accent"
-              >
-                <span
-                  className="size-1.5 rounded-full"
-                  style={{ backgroundColor: other.color }}
-                />
-                {other.label}
-                <span className="text-muted-foreground/60">{c}</span>
-              </Link>
-            ))}
-          </div>
-        )}
 
         {/* 局部 FAQ（分类页专属，非详情页机械复制）；id 供 FAQ 中心页锚点跳转 */}
         <details

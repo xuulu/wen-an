@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronRight, Layers, Library, Star } from "lucide-react";
+import { useState } from "react";
+import { ChevronRight, FolderTree, Layers, Library, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -15,9 +16,20 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { cn } from "@/lib/utils";
+
+interface SidebarCategory {
+  id: string;
+  label: string;
+  count: number;
+  color: string;
+}
 
 interface AppSidebarProps {
   activeId: string;
@@ -25,6 +37,8 @@ interface AppSidebarProps {
   favoriteCount: number;
   /** 全部分类数量（/categories 入口徽标） */
   categoryTotal: number;
+  /** 分类二级菜单数据（默认收缩，第一项「全部分类」固定） */
+  categories: SidebarCategory[];
   onSelect: (id: string) => void;
   isLoggedIn: boolean;
   userNickname: string;
@@ -36,6 +50,7 @@ export function AppSidebar({
   totalCount,
   favoriteCount,
   categoryTotal,
+  categories,
   onSelect,
   isLoggedIn,
   userNickname,
@@ -43,6 +58,8 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const { setOpenMobile } = useSidebar();
   const router = useRouter();
+  // 分类二级菜单默认收缩；点击展开
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
 
   function handleSelect(id: string) {
     onSelect(id);
@@ -104,8 +121,8 @@ export function AppSidebar({
         <SidebarGroup>
           <SidebarGroupLabel>分类</SidebarGroupLabel>
           <SidebarMenu>
+            {/* 第一项：全部分类总览页（整页链接，SEO 可抓取） */}
             <SidebarMenuItem>
-              {/* 全部分类总览页：整页链接（SEO 可抓取），分类详情统一从总览页进入 */}
               <SidebarMenuButton
                 render={<Link href="/categories" />}
                 isActive={activeId === "categories"}
@@ -114,6 +131,43 @@ export function AppSidebar({
                 <span>全部分类</span>
                 <SidebarMenuBadge>{categoryTotal}</SidebarMenuBadge>
               </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            {/* 第二项：文案分类二级菜单（默认收缩） */}
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => setCategoriesOpen((v) => !v)}
+                className={cn(categoriesOpen && "bg-sidebar-accent")}
+                aria-expanded={categoriesOpen}
+              >
+                <FolderTree />
+                <span>文案分类</span>
+                <ChevronRight
+                  className={cn(
+                    "ml-auto size-4 shrink-0 text-muted-foreground transition-transform duration-200",
+                    categoriesOpen && "rotate-90"
+                  )}
+                />
+              </SidebarMenuButton>
+              {categoriesOpen && (
+                <SidebarMenuSub>
+                  {categories.map((category) => (
+                    <SidebarMenuSubItem key={category.id}>
+                      <SidebarMenuSubButton
+                        render={<Link href={`/category/${category.id}`} />}
+                        isActive={activeId === category.id}
+                      >
+                        <span
+                          className="size-2 shrink-0 rounded-full"
+                          style={{ backgroundColor: category.color }}
+                        />
+                        <span>{category.label}</span>
+                        <SidebarMenuBadge>{category.count}</SidebarMenuBadge>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  ))}
+                </SidebarMenuSub>
+              )}
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>

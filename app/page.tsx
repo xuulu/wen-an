@@ -8,6 +8,7 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { getCurrentUser } from "@/lib/auth";
 import {
   getCategories,
+  getCategoryCounts,
   getCopyItems,
   getFavoritesCount,
   getTopFavorited,
@@ -58,18 +59,20 @@ export default async function Home({
     .split("-")
     .reduce((acc, part) => (acc ^ parseInt(part, 16)) >>> 0, 0);
 
-  const [categories, firstPage, hotItems, favoritesCount] = await Promise.all([
-    getCategories(),
-    getCopyItems({
-      userId: user?.id ?? 0,
-      pagination: { page: 1, pageSize: HOME_PAGE_SIZE },
-      search: q?.trim() || undefined,
-      sort: "random",
-      randomSeed: seed,
-    }),
-    getTopFavorited(5, true),
-    getFavoritesCount(user?.id ?? 0),
-  ]);
+  const [categories, categoryCounts, firstPage, hotItems, favoritesCount] =
+    await Promise.all([
+      getCategories(),
+      getCategoryCounts(),
+      getCopyItems({
+        userId: user?.id ?? 0,
+        pagination: { page: 1, pageSize: HOME_PAGE_SIZE },
+        search: q?.trim() || undefined,
+        sort: "random",
+        randomSeed: seed,
+      }),
+      getTopFavorited(5, true),
+      getFavoritesCount(user?.id ?? 0),
+    ]);
 
   const initialRecommended = pickDailyRecommend(firstPage.items);
 
@@ -134,6 +137,7 @@ export default async function Home({
         initialItems={firstPage.items}
         total={firstPage.total}
         categories={categories}
+        categoryCounts={categoryCounts}
         favoritesCount={favoritesCount}
         initialRecommended={initialRecommended}
         isLoggedIn={!!user}

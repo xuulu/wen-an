@@ -12,6 +12,22 @@ import {
 } from "@/lib/site-settings";
 import { resolveTheme, themeInitScript } from "@/lib/theme";
 
+/** 全站禁止用户手动缩放（移动端双指/双击、桌面 Ctrl±/Ctrl+滚轮均拦截，见下方 viewport export 与 blockZoomScript） */
+const blockZoomScript = `(function(){
+  function noop(e){e.preventDefault();}
+  function onKey(e){
+    if((e.ctrlKey||e.metaKey)&&(e.key==='+'||e.key==='-'||e.key==='='||e.key==='0')){e.preventDefault();}
+  }
+  function onWheel(e){
+    if(e.ctrlKey||e.metaKey){e.preventDefault();}
+  }
+  document.addEventListener('wheel',onWheel,{passive:false});
+  document.addEventListener('keydown',onKey);
+  document.addEventListener('gesturestart',noop);
+  document.addEventListener('gesturechange',noop);
+  document.addEventListener('gestureend',noop);
+})();`;
+
 const geistSans = Geist({
   variable: "--font-sans",
   subsets: ["latin"],
@@ -88,6 +104,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#020617" },
@@ -116,6 +135,8 @@ export default async function RootLayout({
       <head>
         {/* 防 FOUC：首帧前同步设置主题（与 SSR cookie 解析逻辑一致） */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* 全站屏蔽放大缩小（Ctrl± / Ctrl+滚轮 / 移动端手势） */}
+        <script dangerouslySetInnerHTML={{ __html: blockZoomScript }} />
         {/* 自定义 head 标签（管理员后台配置，SSR 原样输出以便收录验证生效） */}
         {renderCustomHeadTags(customTags)}
       </head>

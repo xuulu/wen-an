@@ -99,10 +99,10 @@ export function DailyRecommend({
           <Sparkles className="size-4" />
         </span>
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 overflow-hidden">
           <div className="flex items-center gap-2">
             <span className="shrink-0 text-xs font-semibold">每日推荐</span>
-            <h3 className="min-w-0 truncate text-sm font-medium">
+            <h3 className="min-w-0 flex-1 line-clamp-2 text-sm leading-snug font-medium">
               <Link
                 href={`/copy/${recommended.id}`}
                 className="rounded-sm outline-none transition-colors hover:text-foreground/70 focus-visible:ring-2 focus-visible:ring-ring"
@@ -119,7 +119,7 @@ export function DailyRecommend({
               </span>
             )}
           </div>
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+          <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
             {recommended.content}
           </p>
         </div>

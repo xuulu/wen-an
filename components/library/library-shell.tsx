@@ -47,6 +47,8 @@ interface LibraryShellProps {
   /** 当前视图总条数（服务端 COUNT） */
   total: number;
   categories: Category[];
+  /** 各分类已上架数量（服务端聚合，侧边栏分类二级菜单徽标） */
+  categoryCounts: { id: string; count: number }[];
   /** 当前用户收藏数（服务端聚合，未登录为 0） */
   favoritesCount: number;
   initialRecommended: CopyItem | null;
@@ -61,6 +63,8 @@ interface LibraryShellProps {
   initialCategoryId?: string;
   /** 初始搜索词（来自 URL ?q=，如 404 页搜索框跳转） */
   initialQuery?: string;
+  /** 页面头部内容（服务端组件插槽，渲染在搜索栏下方、列表上方；分类页传 CategoryHero） */
+  hero?: React.ReactNode;
   /** 站点名称（后台配置，服务端传入） */
   siteName: string;
 }
@@ -101,6 +105,7 @@ export function LibraryShell({
   initialItems,
   total: initialTotal,
   categories,
+  categoryCounts,
   favoritesCount: initialFavoritesCount,
   initialRecommended,
   isLoggedIn,
@@ -110,6 +115,7 @@ export function LibraryShell({
   sortMode = "random",
   initialCategoryId = "all",
   initialQuery = "",
+  hero,
   siteName,
 }: LibraryShellProps) {
   const router = useRouter();
@@ -207,6 +213,18 @@ export function LibraryShell({
     [categories]
   );
 
+  // 侧边栏分类二级菜单数据（名称 + 数量 + 色点）
+  const sidebarCategories = useMemo(
+    () =>
+      categories.map((category) => ({
+        id: category.id,
+        label: category.label,
+        color: category.color,
+        count: categoryCounts.find((c) => c.id === category.id)?.count ?? 0,
+      })),
+    [categories, categoryCounts]
+  );
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
 
@@ -301,6 +319,7 @@ export function LibraryShell({
           totalCount={total}
           favoriteCount={favoritesCount}
           categoryTotal={categories.length}
+          categories={sidebarCategories}
           onSelect={handleSelectCategory}
           isLoggedIn={isLoggedIn}
           userNickname={userNickname}
@@ -346,6 +365,8 @@ export function LibraryShell({
             </Button>
           </header>
           <main className="relative flex-1 p-3 [background-image:radial-gradient(55%_38%_at_50%_-8%,oklch(0.68_0.16_245/0.10),transparent_70%)] sm:p-4 lg:p-6">
+            {/* 页面头部插槽：分类页 CategoryHero 等，置于搜索栏下方、列表上方 */}
+            {hero ? <div className="mx-auto max-w-7xl">{hero}</div> : null}
             <div className="mx-auto flex max-w-7xl flex-col gap-4">
               {/* 每日推荐 + 热门收藏榜并排（大屏各占一半，移动端堆叠），文案列表更快可见 */}
               <div className="grid gap-4 lg:grid-cols-2">

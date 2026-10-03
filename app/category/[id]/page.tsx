@@ -105,15 +105,6 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const description =
     category.description?.trim() || defaultCategoryDescription(category.label);
 
-  // 相关分类：其余分类（按数量倒序，最多 12 个），提供互相发现的内部链接
-  const related = categories
-    .filter((c) => c.id !== id)
-    .map((c) => ({
-      category: c,
-      count: categoryCounts.find((cc) => cc.id === c.id)?.count ?? 0,
-    }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 12);
   const categoryCount = categoryCounts.find((cc) => cc.id === id)?.count ?? 0;
 
   // 对外域名：后台 site_url → SITE_URL env → 空（绝不输出 localhost）
@@ -149,16 +140,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   return (
     <>
       <JsonLd data={structuredData} />
-      <CategoryHero
-        category={category}
-        description={description}
-        count={categoryCount}
-        related={related}
-      />
       <LibraryShell
         initialItems={firstPage.items}
         total={firstPage.total}
         categories={categories}
+        categoryCounts={categoryCounts}
         favoritesCount={favoritesCount}
         initialRecommended={initialRecommended}
         isLoggedIn={!!user}
@@ -167,8 +153,15 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         initialCategoryId={id}
         randomSeed={seed}
         sortMode="random"
+        hero={
+          <CategoryHero
+            category={category}
+            description={description}
+            count={categoryCount}
+          />
+        }
         siteName={seoContext.siteName}
-              />
+      />
     </>
   );
 }
