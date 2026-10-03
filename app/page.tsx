@@ -65,7 +65,7 @@ export default async function SwipeHome() {
     <>
       <JsonLd data={homepageJsonLd} />
       <BrowseLayout activeId="swipe">
-        <main className="flex min-h-[calc(100dvh-var(--footer-h,0px))] flex-1 flex-col py-2">
+        <main className="flex flex-1 flex-col py-2">
           <SwipeStack
             items={firstPage.items}
             categories={categories}

@@ -8,7 +8,7 @@ import {
 } from "framer-motion";
 import { Heart, RefreshCw, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { SwipeCard } from "@/components/library/swipe-card";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,32 @@ export function SwipeStack({
   const x = useMotionValue(0);
   // 跟手旋转（悬停/退回时随位移变化，未过阈值松手回弹）
   const rotate = useTransform(x, [-EXIT_X, 0, EXIT_X], [-14, 0, 14]);
+
+  // 卡片尺寸：按交互区实际可用空间计算（黄金比例 3:4，首屏确保底部按钮/提示可见）
+  const areaRef = useRef<HTMLDivElement>(null);
+  const [cardSize, setCardSize] = useState<{ h: number; w: number } | null>(
+    null
+  );
+  useLayoutEffect(() => {
+    const el = areaRef.current;
+    if (!el) return;
+    const compute = () => {
+      const areaH = el.clientHeight;
+      const areaW = el.clientWidth;
+      const maxH = Math.min(areaH, window.innerHeight * 0.7);
+      let h = maxH;
+      let w = h * 0.75;
+      if (w > areaW) {
+        w = areaW;
+        h = w / 0.75;
+      }
+      setCardSize({ h: Math.round(h), w: Math.round(w) });
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const current = deck[0];
   const next1 = deck[1];
@@ -145,23 +171,8 @@ export function SwipeStack({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, isLoggedIn, saving]);
 
-  /** 防浏览器历史滑动/后退手势：横向移动超过 10px 时阻止默认行为，
-   *  避免 iOS 边缘返回手势 / Android 横滑手势被误触发（页面无横向滚动，仅卡片拖拽需要横移） */
-  useEffect(() => {
-    function onTouchMove(e: TouchEvent) {
-      if (flyingRef.current) return;
-      const t = e.touches[0];
-      if (!t) return;
-      const dx = Math.abs(t.clientX - (lastX.current ?? t.clientX));
-      if (dx > 10) e.preventDefault();
-      lastX.current = t.clientX;
-    }
-    window.addEventListener("touchmove", onTouchMove, { passive: false });
-    return () => window.removeEventListener("touchmove", onTouchMove);
-  }, []);
-
-  const lastX = useRef<number | null>(null);
-
+  /** 防浏览器历史滑动/后退手势：拖拽元素 touch-action: pan-y（横向由 framer 处理、垂直保留滚动），
+   *  body 层 overscroll-x-none 兜底；不再全局拦截 touchmove，避免横滑后页面滚动被锁死 */
   function reshuffle() {
     router.refresh();
   }
@@ -195,9 +206,16 @@ export function SwipeStack({
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-4">
-      {/* 交互区：黄金比例卡片（3:4），高度上限 70dvh，垂直居中 */}
-      <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center">
-        <div className="relative aspect-[3/4] max-h-[70dvh] w-full max-w-[min(28rem,calc(70dvh*0.75))]">
+      {/* 交互区：卡片尺寸由 JS 按交互区实际可用空间计算（黄金比例 3:4，不撑高 main，首屏保证按钮可见） */}
+      <div ref={areaRef} className="relative flex min-h-0 flex-1 flex-col">
+        <div
+          className="relative mx-auto"
+          style={
+            cardSize
+              ? { height: cardSize.h, width: cardSize.w }
+              : { aspectRatio: "3 / 4", maxHeight: "100%", maxWidth: "100%" }
+          }
+        >
           {/* 第三层 */}
           {next2 && (
             <div className="absolute inset-0 scale-[0.9] opacity-50">
@@ -226,8 +244,8 @@ export function SwipeStack({
           {/* 当前层：可拖拽；未过阈值松手回弹（悬停/退回），过阈值飞出 */}
           {current && (
             <motion.div
-              className="absolute inset-0 cursor-grab touch-none select-none active:cursor-grabbing"
-              style={{ x, rotate }}
+              className="absolute inset-0 cursor-grab select-none active:cursor-grabbing"
+              style={{ x, rotate, touchAction: "pan-y" }}
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.12}
