@@ -23,7 +23,7 @@ export function HotRanking({
         <h2 className="text-sm font-semibold">热门收藏榜</h2>
         <span className="text-xs text-muted-foreground">大家都在收藏</span>
       </div>
-      <ol className="grid grid-cols-1 gap-1 sm:grid-cols-2 xl:grid-cols-5">
+      <ol className="grid grid-cols-1 gap-1 sm:grid-cols-2">
         {items.map((item, i) => (
           <li key={item.id}>
             <button

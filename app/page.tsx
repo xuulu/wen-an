@@ -131,7 +131,6 @@ export default async function Home({
         siteName={seoContext.siteName}
         description={seoContext.settings.seo_description}
         categories={seoCategories}
-        hotItems={hotItems}
       />
       <LibraryShell
         initialItems={firstPage.items}

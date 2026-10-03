@@ -365,23 +365,26 @@ export function LibraryShell({
           </header>
           <main className="relative flex-1 p-3 [background-image:radial-gradient(55%_38%_at_50%_-8%,oklch(0.68_0.16_245/0.10),transparent_70%)] sm:p-4 lg:p-6">
             <div className="mx-auto flex max-w-7xl flex-col gap-4">
-              <DailyRecommend
-                items={localItems}
-                categories={categories}
-                initialRecommended={initialRecommended}
-                favoriteIds={favoriteIds}
-                onToggleFavorite={toggleFavorite}
-              />
+              {/* 每日推荐 + 热门收藏榜并排（大屏各占一半，移动端堆叠），文案列表更快可见 */}
+              <div className="grid gap-4 lg:grid-cols-2">
+                <DailyRecommend
+                  items={localItems}
+                  categories={categories}
+                  initialRecommended={initialRecommended}
+                  favoriteIds={favoriteIds}
+                  onToggleFavorite={toggleFavorite}
+                />
 
-              <HotRanking items={hotItems} onSelect={handleHotSelect} />
+                <HotRanking items={hotItems} onSelect={handleHotSelect} />
+              </div>
 
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex flex-col gap-1">
-                  <h1 className="font-heading text-2xl font-semibold tracking-tight">
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <div className="flex min-w-0 items-baseline gap-2">
+                  <h1 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">
                     {activeLabel}
                   </h1>
-                  <p className="font-mono text-xs text-muted-foreground">
-                    {total} ITEMS
+                  <p className="shrink-0 font-mono text-xs text-muted-foreground">
+                    {total} 条
                   </p>
                 </div>
               </div>

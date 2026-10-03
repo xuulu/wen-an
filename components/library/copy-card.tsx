@@ -99,11 +99,11 @@ export function CopyCard({
         </Button>
       </div>
 
-      {/* 标题 */}
+      {/* 标题（点击进详情，hover 强化可点击直觉） */}
       <h3 className="mt-3 line-clamp-2 text-[15px] leading-snug font-semibold tracking-tight">
         <Link
           href={`/copy/${item.id}`}
-          className="rounded-sm outline-none transition-colors hover:text-foreground/70 focus-visible:ring-2 focus-visible:ring-ring"
+          className="rounded-sm outline-none decoration-cyan-500/60 decoration-1 underline-offset-2 transition-colors hover:text-cyan-700 hover:underline focus-visible:ring-2 focus-visible:ring-ring dark:hover:text-cyan-300"
         >
           {item.title}
         </Link>
@@ -114,15 +114,15 @@ export function CopyCard({
         {item.content}
       </p>
 
-      {/* 底部：时间 · 复制（时间唯一展示在这里） */}
-      <div className="mt-auto flex items-center justify-between gap-3 pt-5">
+      {/* 底部：时间 · 复制 */}
+      <div className="mt-auto flex items-center justify-between gap-3 pt-4">
         <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-muted-foreground/60">
           {item.updatedAt}
         </span>
         <Button
           variant="outline"
           size="sm"
-          className="h-8 shrink-0 rounded-full border-0 px-3 text-xs font-medium text-muted-foreground ring-1 ring-foreground/10 hover:text-foreground hover:ring-foreground/25 data-[copied=true]:text-emerald-600 data-[copied=true]:ring-emerald-600/30"
+          className="h-8 shrink-0 rounded-full px-3.5 text-xs font-medium text-muted-foreground ring-1 ring-foreground/10 transition-colors hover:border-cyan-600/30 hover:bg-cyan-500/5 hover:text-cyan-700 hover:ring-cyan-600/30 dark:hover:text-cyan-300 data-[copied=true]:border-emerald-600/30 data-[copied=true]:text-emerald-600 data-[copied=true]:ring-emerald-600/30"
           data-copied={copied}
           onClick={handleCopy}
         >

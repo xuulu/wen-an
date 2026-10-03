@@ -149,21 +149,21 @@ export default async function CopyPage({ params }: CopyPageProps) {
 
           {/* 正文卡片 */}
           <article className="mt-5 rounded-2xl bg-card p-6 ring-1 ring-foreground/[0.07] sm:p-8">
-            <h1 className="text-2xl leading-snug font-bold tracking-tight">
+            <h1 className="text-2xl leading-snug font-bold tracking-tight sm:text-3xl">
               {item.title}
             </h1>
 
             <div className="mt-3 flex flex-wrap items-center gap-2 font-mono text-xs text-muted-foreground">
               {category && (
                 <>
-                  <span
-                    className="size-1.5 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
                   <Link
                     href={`/category/${category.id}`}
-                    className="hover:text-foreground"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 transition-colors hover:bg-accent"
                   >
+                    <span
+                      className="size-1.5 rounded-full"
+                      style={{ backgroundColor: category.color }}
+                    />
                     {category.label}
                   </Link>
                   <span className="text-foreground/20">/</span>
@@ -180,7 +180,7 @@ export default async function CopyPage({ params }: CopyPageProps) {
               )}
             </div>
 
-            <div className="mt-6 whitespace-pre-wrap text-[15px] leading-loose text-foreground/90">
+            <div className="mt-6 whitespace-pre-wrap text-[15px] leading-loose text-foreground/90 sm:text-base">
               {item.content}
             </div>
 
@@ -191,7 +191,10 @@ export default async function CopyPage({ params }: CopyPageProps) {
               </p>
             )}
 
-            <div className="mt-8 border-t pt-6">
+            <div className="mt-8 flex flex-col gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-muted-foreground">
+                觉得不错就复制收藏，方便下次使用
+              </p>
               <CopyDetailActions
                 copyId={item.id}
                 content={item.content}

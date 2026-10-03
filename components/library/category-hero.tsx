@@ -53,7 +53,7 @@ export function CategoryHero({
 
   return (
     <section className="border-b bg-background">
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
         {/* 面包屑（分类页） */}
         <nav
           aria-label="面包屑"
@@ -66,7 +66,7 @@ export function CategoryHero({
           <span className="text-foreground/70">{category.label}</span>
         </nav>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-2.5">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             {category.label}
           </h1>
@@ -82,7 +82,9 @@ export function CategoryHero({
         {/* 相关分类入口 */}
         {related.length > 0 && (
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">相关分类：</span>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              相关分类：
+            </span>
             {related.map(({ category: other, count: c }) => (
               <Link
                 key={other.id}
@@ -101,7 +103,10 @@ export function CategoryHero({
         )}
 
         {/* 局部 FAQ（分类页专属，非详情页机械复制）；id 供 FAQ 中心页锚点跳转 */}
-        <details id="faq" className="group mt-5 rounded-xl border bg-card">
+        <details
+          id="faq"
+          className="group mt-4 max-w-3xl rounded-xl border bg-card"
+        >
           <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
             <HelpCircle className="size-4 text-muted-foreground" />
             关于{category.label}的常见问题
