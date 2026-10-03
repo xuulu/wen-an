@@ -58,8 +58,8 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const { setOpenMobile } = useSidebar();
   const router = useRouter();
-  // 分类二级菜单默认收缩；点击展开
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
+  // 分类二级菜单默认展开；点击箭头收起
+  const [categoriesOpen, setCategoriesOpen] = useState(true);
 
   function handleSelect(id: string) {
     onSelect(id);

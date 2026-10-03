@@ -16,23 +16,11 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import type { TopFavoritedItem } from "@/lib/copywriting-data";
 import type { Category, CopyItem } from "@/lib/copywriting";
 
 // ---- 分包懒加载（Web Vitals：控制首屏 JS）----
-// DailyRecommend / HotRanking：首屏下方内容，独立 chunk 加载，不影响 LCP 关键元素
 // CopyFormSheet：弹层按需打开，ssr:false 进一步砍掉首屏 JS 与 SSR 负担
-const DailyRecommend = dynamic(
-  () =>
-    import("@/components/library/daily-recommend").then(
-      (m) => m.DailyRecommend
-    ),
-  { ssr: true, loading: () => <div className="h-28" aria-hidden /> }
-);
-const HotRanking = dynamic(
-  () => import("@/components/library/hot-ranking").then((m) => m.HotRanking),
-  { ssr: true, loading: () => <div className="h-20" aria-hidden /> }
-);
+// 每日推荐 / 热门收藏榜已抽离为首页专属 HomeRecommendations，不在此加载
 const CopyFormSheet = dynamic(
   () =>
     import("@/components/library/copy-form-sheet").then(
@@ -51,11 +39,8 @@ interface LibraryShellProps {
   categoryCounts: { id: string; count: number }[];
   /** 当前用户收藏数（服务端聚合，未登录为 0） */
   favoritesCount: number;
-  initialRecommended?: CopyItem | null;
   isLoggedIn: boolean;
   userNickname: string;
-  /** 热门收藏榜数据（仅首页传入，分类页不传） */
-  hotItems?: TopFavoritedItem[];
   /** 服务端生成的随机种子：同种子分页顺序稳定，F5 重新随机 */
   randomSeed: number;
   /** 排序模式（与服务端一致）：random / updated */
@@ -66,8 +51,8 @@ interface LibraryShellProps {
   initialQuery?: string;
   /** 页面头部内容（服务端组件插槽，渲染在搜索栏下方、列表上方；分类页传 CategoryHero） */
   hero?: React.ReactNode;
-  /** 是否显示每日推荐 + 热门收藏榜（仅首页显示，分类页关闭） */
-  showRecommendations?: boolean;
+  /** 列表上方通用插槽（首页传 HomeRecommendations；不进入共用布局逻辑） */
+  aboveList?: React.ReactNode;
   /** 站点名称（后台配置，服务端传入） */
   siteName: string;
 }
@@ -110,16 +95,14 @@ export function LibraryShell({
   categories,
   categoryCounts,
   favoritesCount: initialFavoritesCount,
-  initialRecommended = null,
   isLoggedIn,
   userNickname,
-  hotItems = [],
   randomSeed,
   sortMode = "random",
   initialCategoryId = "all",
   initialQuery = "",
   hero,
-  showRecommendations = true,
+  aboveList,
   siteName,
 }: LibraryShellProps) {
   const router = useRouter();
@@ -245,11 +228,6 @@ export function LibraryShell({
     loadPage(1, id, debouncedQuery);
   }
 
-  /** 点击热门收藏榜：跳转详情页（服务端分页下不做客户端单条过滤） */
-  function handleHotSelect(id: string) {
-    router.push(`/copy/${id}`);
-  }
-
   function handleContribute() {
     if (isLoggedIn) setNewSheetOpen(true);
     else router.push("/user/login");
@@ -372,20 +350,8 @@ export function LibraryShell({
             {/* 页面头部插槽：分类页 CategoryHero 等，置于搜索栏下方、列表上方 */}
             {hero ? <div className="mx-auto max-w-7xl">{hero}</div> : null}
             <div className="mx-auto flex max-w-7xl flex-col gap-4">
-              {/* 每日推荐 + 热门收藏榜并排（仅首页显示；分类页通过 showRecommendations=false 关闭，列表更快可见） */}
-              {showRecommendations && (
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <DailyRecommend
-                    items={localItems}
-                    categories={categories}
-                    initialRecommended={initialRecommended}
-                    favoriteIds={favoriteIds}
-                    onToggleFavorite={toggleFavorite}
-                  />
-
-                  <HotRanking items={hotItems} onSelect={handleHotSelect} />
-                </div>
-              )}
+              {/* 列表上方插槽：首页专属推荐区（HomeRecommendations），共用布局不内嵌推荐逻辑 */}
+              {aboveList ? <div>{aboveList}</div> : null}
 
               <div className="flex items-center justify-between gap-3 pt-1">
                 <div className="flex min-w-0 items-baseline gap-2">

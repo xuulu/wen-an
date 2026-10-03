@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { Metadata } from "next";
 
 import { LibraryShell } from "@/components/library/library-shell";
+import { HomeRecommendations } from "@/components/library/home-recommendations";
 import { MarqueeBanner } from "@/components/library/marquee-banner";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getCurrentUser } from "@/lib/auth";
@@ -139,13 +140,20 @@ export default async function Home({
         categories={categories}
         categoryCounts={categoryCounts}
         favoritesCount={favoritesCount}
-        initialRecommended={initialRecommended}
         isLoggedIn={!!user}
         userNickname={user?.nickname ?? ""}
-        hotItems={hotItems}
         randomSeed={seed}
         sortMode="random"
         initialQuery={q ?? ""}
+        aboveList={
+          <HomeRecommendations
+            items={firstPage.items}
+            categories={categories}
+            initialRecommended={initialRecommended}
+            hotItems={hotItems}
+            isLoggedIn={!!user}
+          />
+        }
         siteName={seoContext.siteName}
               />
     </>

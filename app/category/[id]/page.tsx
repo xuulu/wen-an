@@ -136,7 +136,6 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         initialCategoryId={id}
         randomSeed={seed}
         sortMode="random"
-        showRecommendations={false}
         hero={
           <CategoryHero
             category={category}
