@@ -1,3 +1,4 @@
+import { BrowseLayout } from "@/components/library/browse-layout";
 import type { Metadata } from "next";
 
 import { LegalPage } from "@/components/library/legal-page";
@@ -18,7 +19,8 @@ export default async function TermsPage() {
   const { siteName } = ctx;
 
   return (
-    <LegalPage
+    <BrowseLayout>
+      <LegalPage
       title="用户协议"
       updated="2026-09-24"
       intro={`本协议是您与 ${siteName} 运营者之间就使用本站服务所订立的协议。注册、投稿或继续使用本站，即视为您已阅读并同意本协议全部内容。`}
@@ -91,5 +93,6 @@ export default async function TermsPage() {
         { href: "/contact", label: "联系我们" },
       ]}
     />
+      </BrowseLayout>
   );
 }

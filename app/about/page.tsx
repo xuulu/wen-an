@@ -1,3 +1,4 @@
+import { BrowseLayout } from "@/components/library/browse-layout";
 import type { Metadata } from "next";
 
 import { LegalPage } from "@/components/library/legal-page";
@@ -18,7 +19,8 @@ export default async function AboutPage() {
   const { siteName } = ctx;
 
   return (
-    <LegalPage
+    <BrowseLayout>
+      <LegalPage
       title={`关于${siteName}`}
       updated="2026-09-24"
       intro={`${siteName} 是一个开放的精选文案分享社区，希望让每一次表达都有灵感，也让好文案被更多人看见。`}
@@ -59,5 +61,6 @@ export default async function AboutPage() {
         { href: "/user", label: "注册 / 投稿" },
       ]}
     />
+      </BrowseLayout>
   );
 }

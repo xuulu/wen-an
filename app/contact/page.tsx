@@ -1,3 +1,4 @@
+import { BrowseLayout } from "@/components/library/browse-layout";
 import type { Metadata } from "next";
 
 import { LegalPage } from "@/components/library/legal-page";
@@ -39,7 +40,8 @@ export default async function ContactPage() {
       : ["暂未公开联系方式，您可通过个人中心的「意见反馈」与我们联系。"];
 
   return (
-    <LegalPage
+    <BrowseLayout>
+      <LegalPage
       title="联系我们"
       updated="2026-09-24"
       intro={`欢迎就以下事务与 ${siteName} 取得联系，我们会在合理时间内处理。`}
@@ -70,5 +72,6 @@ export default async function ContactPage() {
         { href: "/user", label: "意见反馈" },
       ]}
     />
+      </BrowseLayout>
   );
 }

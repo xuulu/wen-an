@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRight, Library } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import { CopyDetailActions } from "@/components/library/copy-detail-actions";
+import { BrowseLayout } from "@/components/library/browse-layout";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getCurrentUser } from "@/lib/auth";
 import {
@@ -101,23 +102,7 @@ export default async function CopyPage({ params }: CopyPageProps) {
     <>
       <JsonLd data={structuredData} />
 
-      <div className="min-h-screen">
-        <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background/80 px-4 backdrop-blur">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 text-white">
-              <Library className="size-4" />
-            </span>
-            <span className="text-sm font-semibold">{seo.siteName}</span>
-          </Link>
-          <Link
-            href="/"
-            className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            返回首页
-            <ChevronRight className="size-4" />
-          </Link>
-        </header>
-
+      <BrowseLayout activeId={category?.id ?? "none"}>
         <main className="mx-auto max-w-4xl px-4 py-6 sm:py-10">
           {/* 面包屑 */}
           <nav
@@ -244,7 +229,7 @@ export default async function CopyPage({ params }: CopyPageProps) {
           )}
         </main>
 
-      </div>
+      </BrowseLayout>
     </>
   );
 }

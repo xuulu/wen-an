@@ -1,3 +1,4 @@
+import { BrowseLayout } from "@/components/library/browse-layout";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight, HelpCircle } from "lucide-react";
@@ -103,20 +104,7 @@ export default async function FaqPage() {
   return (
     <>
       <JsonLd data={structuredData} />
-      <div className="min-h-screen">
-        <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background/80 px-4 backdrop-blur">
-          <Link href="/" className="text-lg font-bold tracking-tight">
-            {seo.siteName}
-          </Link>
-          <Link
-            href="/"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            返回首页
-            <ChevronRight className="ml-0.5 inline size-3.5" />
-          </Link>
-        </header>
-
+      <BrowseLayout>
         <main className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
           {/* 面包屑 */}
           <nav
@@ -189,7 +177,7 @@ export default async function FaqPage() {
           )}
         </main>
 
-      </div>
+      </BrowseLayout>
     </>
   );
 }

@@ -1,3 +1,4 @@
+import { BrowseLayout } from "@/components/library/browse-layout";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight, LayoutGrid } from "lucide-react";
@@ -71,7 +72,7 @@ export default async function CategoriesPage() {
   };
 
   return (
-    <>
+    <BrowseLayout activeId="categories">
       <JsonLd data={categoryJsonLd} />
       <div className="border-b bg-background">
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
@@ -129,6 +130,6 @@ export default async function CategoriesPage() {
           ))}
         </div>
       </main>
-    </>
+    </BrowseLayout>
   );
 }

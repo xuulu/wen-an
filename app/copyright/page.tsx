@@ -1,3 +1,4 @@
+import { BrowseLayout } from "@/components/library/browse-layout";
 import type { Metadata } from "next";
 
 import { LegalPage } from "@/components/library/legal-page";
@@ -31,7 +32,8 @@ export default async function CopyrightPage() {
     : "请通过页脚「联系我们」中的方式与我们取得联系。";
 
   return (
-    <LegalPage
+    <BrowseLayout>
+      <LegalPage
       title="版权声明与侵权投诉"
       updated="2026-09-24"
       intro={`${siteName} 尊重并保护知识产权，要求用户在投稿时遵守法律法规、不侵犯他人合法权益。本页说明版权归属、侵权投诉（通知）与反通知的处理流程。`}
@@ -88,5 +90,6 @@ export default async function CopyrightPage() {
         { href: "/user", label: "意见反馈" },
       ]}
     />
+      </BrowseLayout>
   );
 }

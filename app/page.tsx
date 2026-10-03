@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { Metadata } from "next";
 
 import { SwipeStack } from "@/components/library/swipe-stack";
+import { BrowseLayout } from "@/components/library/browse-layout";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getCurrentUser } from "@/lib/auth";
 import { getCategories, getCopyItems } from "@/lib/copywriting-data";
@@ -63,14 +64,16 @@ export default async function SwipeHome() {
   return (
     <>
       <JsonLd data={homepageJsonLd} />
-      <main className="flex min-h-[calc(100dvh-var(--footer-h,0px))] flex-1 flex-col py-2">
-        <SwipeStack
-          items={firstPage.items}
-          categories={categories}
-          isLoggedIn={!!user}
-          siteName={seoContext.siteName}
-        />
-      </main>
+      <BrowseLayout activeId="swipe">
+        <main className="flex min-h-[calc(100dvh-var(--footer-h,0px))] flex-1 flex-col py-2">
+          <SwipeStack
+            items={firstPage.items}
+            categories={categories}
+            isLoggedIn={!!user}
+            siteName={seoContext.siteName}
+          />
+        </main>
+      </BrowseLayout>
     </>
   );
 }

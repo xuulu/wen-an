@@ -1,3 +1,4 @@
+import { BrowseLayout } from "@/components/library/browse-layout";
 import type { Metadata } from "next";
 
 import { LegalPage } from "@/components/library/legal-page";
@@ -18,7 +19,8 @@ export default async function PrivacyPage() {
   const { siteName } = ctx;
 
   return (
-    <LegalPage
+    <BrowseLayout>
+      <LegalPage
       title="隐私政策"
       updated="2026-09-24"
       intro={`本政策说明 ${siteName} 如何收集、使用、存储和保护您的个人信息，以及您可以如何行使相关权利。使用本站即表示您理解并同意本政策所述内容。`}
@@ -89,5 +91,6 @@ export default async function PrivacyPage() {
         { href: "/contact", label: "联系我们" },
       ]}
     />
+      </BrowseLayout>
   );
 }

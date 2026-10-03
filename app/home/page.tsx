@@ -48,10 +48,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; view?: string }>;
 }) {
   const user = await getCurrentUser();
-  const { q } = await searchParams;
+  const { q, view } = await searchParams;
 
   // 随机种子：每次请求重新生成，F5 重新随机；分页顺序在同种子下稳定
   const seed = randomUUID()
@@ -134,6 +134,7 @@ export default async function Home({
         randomSeed={seed}
         sortMode="random"
         initialQuery={q ?? ""}
+        initialCategoryId={view === "favorites" ? "favorites" : "all"}
         aboveList={
           <HomeRecommendations
             items={firstPage.items}

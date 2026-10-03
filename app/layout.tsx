@@ -139,7 +139,8 @@ export default async function RootLayout({
         {/* 自定义 head 标签（管理员后台配置，SSR 原样输出以便收录验证生效） */}
         {renderCustomHeadTags(customTags)}
       </head>
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col overscroll-x-none">
+        {/* 探探卡片流：body 禁横向 overscroll，组件内另有 touchmove 兜底，防浏览器历史滑动/后退手势 */}
         <ThemeProvider initialTheme={themeName}>
           {/* 全站跑马灯：全局布局统一渲染，前台所有页面可见 */}
           <MarqueeBanner
