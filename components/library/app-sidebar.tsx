@@ -1,8 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight, FolderTree, Layers, Library, Star } from "lucide-react";
-import { useRouter } from "next/navigation";
+import {
+  ChevronRight,
+  FolderTree,
+  Home,
+  Layers,
+  Library,
+  Star,
+} from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 
 import {
@@ -58,6 +65,7 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const { setOpenMobile } = useSidebar();
   const router = useRouter();
+  const pathname = usePathname();
   // 分类二级菜单默认展开；点击箭头收起
   const [categoriesOpen, setCategoriesOpen] = useState(true);
 
@@ -66,7 +74,8 @@ export function AppSidebar({
     setOpenMobile(false);
     // 走客户端路由（SPA，不刷新整页）；收藏是用户私有视图，不产生公开 URL
     if (id === "all") {
-      router.push("/");
+      // 列表视图已迁至 /home（/ 是探探风格交互首页）
+      router.push("/home");
     } else if (id !== "favorites") {
       router.push(`/category/${id}`);
     }
@@ -98,7 +107,16 @@ export function AppSidebar({
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
-                isActive={activeId === "all"}
+                render={<Link href="/home" />}
+                isActive={pathname === "/home"}
+              >
+                <Home />
+                <span>首页</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={activeId === "all" && pathname !== "/home"}
                 onClick={() => handleSelect("all")}
               >
                 <Library />

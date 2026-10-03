@@ -46,6 +46,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 1,
     },
+    // 列表视图首页（/home）：完整文案列表页，重点收录
+    {
+      url: `${siteUrl}/home`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
   ];
 
   // 信息类静态页（FAQ 对 SEO 有价值，收录；法律 / 协议页价值低不进 sitemap，仍可被自然抓取）

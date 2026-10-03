@@ -2,83 +2,45 @@ import { randomUUID } from "node:crypto";
 
 import type { Metadata } from "next";
 
-import { LibraryShell } from "@/components/library/library-shell";
-import { HomeRecommendations } from "@/components/library/home-recommendations";
+import { SwipeStack } from "@/components/library/swipe-stack";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getCurrentUser } from "@/lib/auth";
-import {
-  getCategories,
-  getCategoryCounts,
-  getCopyItems,
-  getFavoritesCount,
-  getTopFavorited,
-} from "@/lib/copywriting-data";
-import {
-  buildSeoMetadata,
-  getSeoContext,
-  websiteJsonLd,
-} from "@/lib/seo";
-import type { CopyItem } from "@/lib/copywriting";
+import { getCategories, getCopyItems } from "@/lib/copywriting-data";
+import { buildSeoMetadata, getSeoContext, websiteJsonLd } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
-/** 首页服务端分页页大小（后续翻页由 /api/copy 服务端加载） */
-export const HOME_PAGE_SIZE = 50;
-
-/** 按日期确定性选择一条推荐文案（同一天固定同一条） */
-function pickDailyRecommend(items: CopyItem[]): CopyItem | null {
-  if (items.length === 0) return null;
-  const dayOfYear = Math.floor(
-    (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) /
-      86400000
-  );
-  return items[dayOfYear % items.length];
-}
+/** 探探风格卡片流首屏加载量（看完可「换一批」） */
+const SWIPE_PAGE_SIZE = 30;
 
 export async function generateMetadata(): Promise<Metadata> {
-  // 首页标题跟随后台「站点设置」：站点名 + 标题后缀
   const ctx = await getSeoContext();
   return buildSeoMetadata({
     title: `${ctx.siteName} - ${ctx.settings.site_title_suffix}`,
+    description: ctx.settings.seo_description,
     path: "/",
     type: "website",
   });
 }
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string }>;
-}) {
+export default async function SwipeHome() {
   const user = await getCurrentUser();
-  const { q } = await searchParams;
 
-  // 随机种子：每次请求重新生成，F5 重新随机；分页顺序在同种子下稳定
+  // 随机种子：每次请求重新生成，刷新即换一批
   const seed = randomUUID()
     .split("-")
     .reduce((acc, part) => (acc ^ parseInt(part, 16)) >>> 0, 0);
 
-  const [categories, categoryCounts, firstPage, hotItems, favoritesCount] =
-    await Promise.all([
-      getCategories(),
-      getCategoryCounts(),
-      getCopyItems({
-        userId: user?.id ?? 0,
-        pagination: { page: 1, pageSize: HOME_PAGE_SIZE },
-        search: q?.trim() || undefined,
-        sort: "random",
-        randomSeed: seed,
-      }),
-      getTopFavorited(5, true),
-      getFavoritesCount(user?.id ?? 0),
-    ]);
+  const [categories, firstPage] = await Promise.all([
+    getCategories(),
+    getCopyItems({
+      userId: user?.id ?? 0,
+      pagination: { page: 1, pageSize: SWIPE_PAGE_SIZE },
+      sort: "random",
+      randomSeed: seed,
+    }),
+  ]);
 
-  const initialRecommended = pickDailyRecommend(firstPage.items);
-
-  // 主要分类（最多 12 个）：用于首页 JSON-LD ItemList 声明「网站有哪些分类」
-  const topCategories = categories.slice(0, 12);
-
-  // 首页结构化数据：全站 WebSite + 页面 WebPage + Organization 合并为单 @graph（每页仅一个 ld+json 标签）
   const seoContext = await getSeoContext();
   const { siteUrl } = seoContext;
   const homepageJsonLd = {
@@ -95,56 +57,20 @@ export default async function Home({
         ...(siteUrl ? { url: siteUrl } : {}),
         inLanguage: "zh-CN",
       },
-      {
-        "@type": "Organization",
-        name: seoContext.siteName,
-        ...(siteUrl ? { url: siteUrl } : {}),
-        ...(seoContext.settings.site_logo
-          ? { logo: seoContext.settings.site_logo }
-          : {}),
-      },
-      ...(topCategories.length > 0
-        ? [
-            {
-              "@type": "ItemList",
-              name: "主要分类",
-              itemListElement: topCategories.map((category, i) => ({
-                "@type": "ListItem",
-                position: i + 1,
-                name: category.label,
-                ...(siteUrl ? { url: `${siteUrl}/category/${category.id}` } : {}),
-              })),
-            },
-          ]
-        : []),
     ],
   };
 
   return (
     <>
       <JsonLd data={homepageJsonLd} />
-      <LibraryShell
-        initialItems={firstPage.items}
-        total={firstPage.total}
-        categories={categories}
-        categoryCounts={categoryCounts}
-        favoritesCount={favoritesCount}
-        isLoggedIn={!!user}
-        userNickname={user?.nickname ?? ""}
-        randomSeed={seed}
-        sortMode="random"
-        initialQuery={q ?? ""}
-        aboveList={
-          <HomeRecommendations
-            items={firstPage.items}
-            categories={categories}
-            initialRecommended={initialRecommended}
-            hotItems={hotItems}
-            isLoggedIn={!!user}
-          />
-        }
-        siteName={seoContext.siteName}
-              />
+      <main className="flex min-h-[calc(100dvh-var(--footer-h,0px))] flex-1 flex-col py-2">
+        <SwipeStack
+          items={firstPage.items}
+          categories={categories}
+          isLoggedIn={!!user}
+          siteName={seoContext.siteName}
+        />
+      </main>
     </>
   );
 }
