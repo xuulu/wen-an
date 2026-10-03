@@ -68,10 +68,6 @@ export default async function CopyPage({ params }: CopyPageProps) {
   const hotItems = (await getTopFavorited(10, true))
     .filter((h) => h.id !== id && h.categoryId !== item.categoryId)
     .slice(0, 2);
-  // 其他分类入口（详情页底部「相关分类」，发现更多分类专题）
-  const relatedCategories = categories
-    .filter((c) => c.id !== item.categoryId)
-    .slice(0, 8);
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -244,28 +240,6 @@ export default async function CopyPage({ params }: CopyPageProps) {
                   </li>
                 ))}
               </ul>
-            </section>
-          )}
-
-          {/* 相关分类专题入口 */}
-          {relatedCategories.length > 0 && (
-            <section className="mt-8">
-              <h2 className="text-sm font-semibold">浏览其他分类</h2>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {relatedCategories.map((c) => (
-                  <Link
-                    key={c.id}
-                    href={`/category/${c.id}`}
-                    className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs transition-colors hover:bg-accent"
-                  >
-                    <span
-                      className="size-1.5 rounded-full"
-                      style={{ backgroundColor: c.color }}
-                    />
-                    {c.label}
-                  </Link>
-                ))}
-              </div>
             </section>
           )}
         </main>

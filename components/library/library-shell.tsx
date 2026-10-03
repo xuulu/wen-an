@@ -353,16 +353,19 @@ export function LibraryShell({
               {/* 列表上方插槽：首页专属推荐区（HomeRecommendations），共用布局不内嵌推荐逻辑 */}
               {aboveList ? <div>{aboveList}</div> : null}
 
-              <div className="flex items-center justify-between gap-3 pt-1">
-                <div className="flex min-w-0 items-baseline gap-2">
-                  <h1 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">
-                    {activeLabel}
-                  </h1>
-                  <p className="shrink-0 font-mono text-xs text-muted-foreground">
-                    {total} 条
-                  </p>
+              {/* 列表标题行：有 hero（分类页头部已含 H1 + 条数）时不重复展示 */}
+              {!hero && (
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <div className="flex min-w-0 items-baseline gap-2">
+                    <h1 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">
+                      {activeLabel}
+                    </h1>
+                    <p className="shrink-0 font-mono text-xs text-muted-foreground">
+                      {total} 条
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {loading ? (
                 <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">
