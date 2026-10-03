@@ -36,7 +36,9 @@ export async function PATCH(
   const item = await setCopyItemStatus(
     id,
     status as CopyStatus,
-    status === "rejected" ? reason : ""
+    status === "rejected" ? reason : "",
+    // 管理员人工审核：标记 manual，人工原因红字展示给投稿用户
+    "manual"
   );
   if (!item) {
     return NextResponse.json({ error: "文案不存在" }, { status: 404 });

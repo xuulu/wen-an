@@ -27,6 +27,7 @@ interface CopyItemRow {
   created_at?: Date | string | null;
   is_favorite: boolean;
   review_reason?: string;
+  review_source?: string;
   /** 投稿人 id（NULL = 公共预置文案） */
   user_id?: number | null;
   /** 投稿人昵称（JOIN wenan_users） */
@@ -318,6 +319,7 @@ export async function getCopyItems(
       c.updated_at,
       c.created_at,
       c.review_reason,
+      c.review_source,
       c.user_id,
       u.nickname AS author_name,
       EXISTS (
@@ -349,6 +351,7 @@ export async function getCopyItems(
       // 发布时间：created_at 为空的历史数据视为与 updated_at 相同
       createdAt: row.created_at ? formatDate(row.created_at) : formatDate(row.updated_at),
       reviewReason: row.review_reason,
+      reviewSource: row.review_source as "ai" | "manual" | undefined,
       // 投稿人信息：仅用户投稿（user_id 非空）时返回，公共预置文案忽略
       ...(row.user_id
         ? {
@@ -396,7 +399,7 @@ export async function getCopyItemById(
     `
       SELECT
         c.id, c.title, c.content, c.category_id, c.status, c.updated_at,
-        c.created_at, c.review_reason, c.user_id, u.nickname AS author_name,
+        c.created_at, c.review_reason, c.review_source, c.user_id, u.nickname AS author_name,
         EXISTS (
           SELECT 1 FROM wenan_user_favorites f
           WHERE f.copy_id = c.id AND f.user_id = $1
@@ -470,15 +473,19 @@ export async function createCopyItem(
   return item;
 }
 
+/** 审核来源：ai=机器审核（自动拒绝/一键审核）、manual=人工审核 */
+export type ReviewSource = "ai" | "manual";
+
 /** 审核文案：更新状态与原因（仅管理员）；未传 reason 时清空原因 */
 export async function setCopyItemStatus(
   id: string,
   status: CopyStatus,
-  reason = ""
+  reason = "",
+  reviewSource: ReviewSource = "manual"
 ): Promise<CopyItem | null> {
   const { rowCount } = await query(
-    "UPDATE wenan_copy_items SET status = $1, review_reason = $3 WHERE id = $2",
-    [status, Number(id), reason]
+    "UPDATE wenan_copy_items SET status = $1, review_reason = $3, review_source = $4 WHERE id = $2",
+    [status, Number(id), reason, reviewSource]
   );
   if ((rowCount ?? 0) === 0) return null;
   return getCopyItemById(id);
@@ -570,6 +577,7 @@ interface MyCopyRow {
   status: CopyStatus;
   updated_at: Date | string;
   review_reason: string;
+  review_source: string;
 }
 
 /** 用户后台列表：收藏或收藏/投稿超过 50 条时由调用方启用分页 */
@@ -591,6 +599,7 @@ function mapMyRow(row: MyCopyRow): MyCopyItem {
     status: row.status,
     updatedAt: formatDate(row.updated_at),
     reviewReason: row.review_reason,
+    reviewSource: row.review_source as "ai" | "manual" | undefined,
   };
 }
 
@@ -610,7 +619,7 @@ export async function getMyFavorites(
   const { rows } = await query<MyCopyRow>(
     `SELECT c.id, c.title, c.content, c.category_id,
             cat.label AS category_label, cat.color AS category_color,
-            c.status, c.updated_at, c.review_reason
+            c.status, c.updated_at, c.review_reason, c.review_source
      FROM wenan_user_favorites fav
      JOIN wenan_copy_items c ON c.id = fav.copy_id
      JOIN wenan_categories cat ON cat.id = c.category_id
@@ -639,7 +648,7 @@ export async function getMySubmissions(
   const { rows } = await query<MyCopyRow>(
     `SELECT c.id, c.title, c.content, c.category_id,
             cat.label AS category_label, cat.color AS category_color,
-            c.status, c.updated_at, c.review_reason
+            c.status, c.updated_at, c.review_reason, c.review_source
      FROM wenan_copy_items c
      JOIN wenan_categories cat ON cat.id = c.category_id
      WHERE c.user_id = $1 AND c.deleted_at IS NULL
@@ -965,7 +974,7 @@ export async function getRecycleBin(
   const { rows } = await query<MyCopyRow>(
     `SELECT c.id, c.title, c.content, c.category_id,
             cat.label AS category_label, cat.color AS category_color,
-            c.status, c.updated_at, c.review_reason
+            c.status, c.updated_at, c.review_reason, c.review_source
      FROM wenan_copy_items c
      JOIN wenan_categories cat ON cat.id = c.category_id
      WHERE c.user_id = $1 AND c.deleted_at IS NOT NULL

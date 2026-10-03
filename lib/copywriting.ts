@@ -15,6 +15,8 @@ export interface CopyItem {
   createdAt?: string;
   /** 审核拒绝/不确定原因，通过时为空 */
   reviewReason?: string;
+  /** 审核来源：ai=机器审核（可再人工复核）、manual=人工审核；通过/待审时为空 */
+  reviewSource?: "ai" | "manual";
   /** 投稿人 id；公共预置文案（无投稿人）时为 undefined */
   authorId?: string;
   /** 投稿人昵称 */

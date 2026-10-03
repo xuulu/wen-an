@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { MarqueeBanner } from "@/components/library/marquee-banner";
 import { SiteFooter } from "@/components/library/site-footer";
 import { renderCustomHeadTags } from "@/lib/custom-head-tags";
 import {
@@ -50,10 +51,6 @@ export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
   // 对外域名：后台 site_url → SITE_URL env → 空（绝不输出 localhost）
   const siteUrl = resolveSiteUrl(settings);
-  const keywords = settings.seo_keywords
-    .split(",")
-    .map((word) => word.trim())
-    .filter(Boolean);
   const ogImage = settings.site_og_image
     ? resolveAsset(settings.site_og_image, siteUrl)
     : "";
@@ -65,7 +62,6 @@ export async function generateMetadata(): Promise<Metadata> {
       template: `%s | ${settings.site_name}`,
     },
     description: settings.seo_description,
-    keywords,
     applicationName: settings.site_name,
     authors: [{ name: settings.site_name }],
     creator: settings.site_name,
@@ -122,7 +118,10 @@ export default async function RootLayout({
   const isDarkSsr = themeName === "dark";
   // 后台「站点设置 → 自定义元标签」：每行一条完整 HTML 标签（meta/link/script/style），
   // 用于搜索引擎收录验证、访客统计等。仅管理员可写入（XSS 面 = 管理员本人）。
-  const customTags = await getSiteSettings().then((s) => s.custom_head_tags);
+  const settings = await getSiteSettings();
+  const customTags = settings.custom_head_tags;
+  // 全站跑马灯：内容/速度/开关来自后台「站点设置」，作用于全局布局（前台所有页面）
+  const marqueeSpeed = Number(settings.marquee_speed_seconds) || 32;
 
   return (
     <html
@@ -141,7 +140,15 @@ export default async function RootLayout({
         {renderCustomHeadTags(customTags)}
       </head>
       <body className="min-h-full flex flex-col">
-        <ThemeProvider initialTheme={themeName}>{children}</ThemeProvider>
+        <ThemeProvider initialTheme={themeName}>
+          {/* 全站跑马灯：全局布局统一渲染，前台所有页面可见 */}
+          <MarqueeBanner
+            enabled={settings.marquee_enabled !== "false"}
+            content={settings.marquee_content}
+            speedSeconds={marqueeSpeed}
+          />
+          {children}
+        </ThemeProvider>
         {/* 全站页脚：统一在全局布局渲染，各页面不再手动引入（分类导航在此，全站可见利于 SEO） */}
         <SiteFooter />
       </body>

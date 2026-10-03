@@ -46,8 +46,6 @@ export interface SeoPageOptions {
   description?: string;
   /** 页面路径（相对，如 /copy/123）；拼接 siteUrl 生成 canonical 与 OG url */
   path?: string;
-  /** 分类等 SEO 关键词 */
-  keywords?: string[];
   /** 指定 OG 图片（相对路径或完整 URL）；缺省用站点分享图 */
   ogImage?: string;
   /** 页面类型（OG type） */
@@ -57,8 +55,8 @@ export interface SeoPageOptions {
 }
 
 /**
- * 统一组装 Metadata：title / description / keywords /
- * canonical / OG / Twitter / robots，逐项缺省兜底。
+ * 统一组装 Metadata：title / description / canonical / OG / Twitter / robots，
+ * 逐项缺省兜底（Google 已不使用 keywords 元标签，不输出）。
  */
 export async function buildSeoMetadata(
   options: SeoPageOptions
@@ -69,12 +67,6 @@ export async function buildSeoMetadata(
   const fullUrl = options.path && siteUrl ? `${siteUrl}${options.path}` : "";
   const pageDescription =
     options.description?.slice(0, 160) || settings.seo_description;
-  const keywords = options.keywords?.length
-    ? options.keywords
-    : settings.seo_keywords
-        .split(",")
-        .map((w) => w.trim())
-        .filter(Boolean);
   const ogImage = options.ogImage
     ? resolveAsset(options.ogImage, siteUrl)
     : settings.site_og_image
@@ -84,7 +76,6 @@ export async function buildSeoMetadata(
   return {
     title: options.title,
     description: pageDescription,
-    keywords,
     alternates: options.path ? { canonical: options.path } : undefined,
     openGraph: {
       type: options.type ?? "website",

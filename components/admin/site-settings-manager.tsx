@@ -283,13 +283,6 @@ export function SiteSettingsManager() {
             onChange={(v) => set("seo_description", v)}
           />
         </Field>
-        <Field label="关键词（英文逗号分隔）">
-          <TextareaField
-            rows={2}
-            value={settings.seo_keywords}
-            onChange={(v) => set("seo_keywords", v)}
-          />
-        </Field>
         <Field
           label="自定义元标签（每行一条完整 HTML 标签）"
           desc="用于搜索引擎收录验证（百度 / 必应 / Google Search Console）、访客统计（百度统计 / 51LA / GA 等）。支持 <meta>、<link>、<script>、<style>，保存后原样输出到全站 <head>（属性需使用双引号）"

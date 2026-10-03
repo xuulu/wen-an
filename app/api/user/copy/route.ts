@@ -88,7 +88,9 @@ export async function POST(request: Request) {
     const updated = await setCopyItemStatus(
       item.id,
       outcome.decision,
-      outcome.decision === "rejected" ? outcome.reason : ""
+      outcome.decision === "rejected" ? outcome.reason : "",
+      // AI 机审标记：用户可修改重提，人工可复核改判
+      "ai"
     );
     return NextResponse.json(
       { ...(updated ?? item), reviewReason: outcome.reason },

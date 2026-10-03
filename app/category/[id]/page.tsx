@@ -53,7 +53,6 @@ export async function generateMetadata({
     title: heading,
     description,
     path: `/category/${category.id}`,
-    keywords: [category.label, `${category.label}文案`, "文案大全"],
     type: "website",
   });
 }

@@ -98,6 +98,19 @@ export function SubmissionsPanel({ categories }: { categories: Category[] }) {
         </div>
       </div>
 
+      {/* 机器审核拦截提示：AI 拒绝后仍会人工复核 */}
+      {list.items.some(
+        (item) =>
+          item.status === "rejected" && item.reviewSource === "ai"
+      ) && (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
+          <p className="font-medium">您的投稿已被机器审核拦截</p>
+          <p className="mt-1 leading-relaxed">
+            稍后人工会再次审核，审核通过后将公开可见；您也可在此期间修改文案后重新提交，或等待人工审核通过 / 拒绝并给出原因。
+          </p>
+        </div>
+      )}
+
       {selectMode && (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/40 px-3 py-2 text-sm">
           <label className="flex items-center gap-2">
@@ -149,7 +162,7 @@ export function SubmissionsPanel({ categories }: { categories: Category[] }) {
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate font-medium">{item.title}</span>
                 {item.status === "rejected" && item.reviewReason && (
-                  <span className="truncate text-xs text-muted-foreground">
+                  <span className="truncate text-xs font-medium text-rose-600 dark:text-rose-400">
                     拒绝原因：{item.reviewReason}
                   </span>
                 )}

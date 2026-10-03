@@ -41,7 +41,7 @@ export async function POST() {
   await Promise.all(
     details
       .filter((d) => d.decision === "rejected")
-      .map((d) => setCopyItemStatus(d.id, "rejected", d.reason))
+      .map((d) => setCopyItemStatus(d.id, "rejected", d.reason, "ai"))
   );
 
   return NextResponse.json({

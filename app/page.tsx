@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 
 import { LibraryShell } from "@/components/library/library-shell";
 import { HomeRecommendations } from "@/components/library/home-recommendations";
-import { MarqueeBanner } from "@/components/library/marquee-banner";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getCurrentUser } from "@/lib/auth";
 import {
@@ -19,7 +18,6 @@ import {
   getSeoContext,
   websiteJsonLd,
 } from "@/lib/seo";
-import { getSiteSettings } from "@/lib/site-settings";
 import type { CopyItem } from "@/lib/copywriting";
 
 export const dynamic = "force-dynamic";
@@ -77,10 +75,6 @@ export default async function Home({
 
   const initialRecommended = pickDailyRecommend(firstPage.items);
 
-  // 首页跑马灯：内容/速度/开关来自后台「站点设置」（纯文本，不嵌入 HTML）
-  const settings = await getSiteSettings();
-  const marqueeSpeed = Number(settings.marquee_speed_seconds) || 32;
-
   // 主要分类（最多 12 个）：用于首页 JSON-LD ItemList 声明「网站有哪些分类」
   const topCategories = categories.slice(0, 12);
 
@@ -129,11 +123,6 @@ export default async function Home({
   return (
     <>
       <JsonLd data={homepageJsonLd} />
-      <MarqueeBanner
-        enabled={settings.marquee_enabled !== "false"}
-        content={settings.marquee_content}
-        speedSeconds={marqueeSpeed}
-      />
       <LibraryShell
         initialItems={firstPage.items}
         total={firstPage.total}

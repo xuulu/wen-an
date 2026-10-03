@@ -582,6 +582,29 @@ export function CopyManager({ categories }: { categories: Category[] }) {
                             <Ban className="text-amber-600" />
                           </Button>
                         )}
+                        {item.status === "rejected" && (
+                          <>
+                            {/* 已拒绝可人工复核改判通过（AI 误拒场景） */}
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label="改为通过"
+                              disabled={reviewingId === item.id}
+                              onClick={() => approveItem(item)}
+                            >
+                              <Check className="text-emerald-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label="拒绝并重写原因"
+                              disabled={reviewingId === item.id}
+                              onClick={() => openReject(item)}
+                            >
+                              <Ban className="text-amber-600" />
+                            </Button>
+                          </>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon-sm"
@@ -679,6 +702,9 @@ export function CopyManager({ categories }: { categories: Category[] }) {
                     </option>
                   ))}
                 </select>
+                <p className="text-xs text-muted-foreground">
+                  人工拒绝原因将替代机器原因，以红字展示在投稿用户后台
+                </p>
               </div>
 
               <div className="flex flex-col gap-2">
