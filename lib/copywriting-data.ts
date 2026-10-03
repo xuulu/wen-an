@@ -14,6 +14,7 @@ interface CategoryRow {
   label: string;
   color: string;
   sort_order: number;
+  description: string;
 }
 
 interface CopyItemRow {
@@ -23,6 +24,7 @@ interface CopyItemRow {
   category_id: number;
   status: CopyStatus;
   updated_at: Date | string;
+  created_at?: Date | string | null;
   is_favorite: boolean;
   review_reason?: string;
   /** 投稿人 id（NULL = 公共预置文案） */
@@ -80,13 +82,14 @@ function formatDate(value: Date | string, kind: "date" | "datetime" = "date"): s
 /** 获取所有类目（数量小，不分页） */
 export async function getCategories(): Promise<Category[]> {
   const { rows } = await query<CategoryRow>(
-    "SELECT id, label, color, sort_order FROM wenan_categories ORDER BY sort_order ASC, id ASC"
+    "SELECT id, label, color, sort_order, description FROM wenan_categories ORDER BY sort_order ASC, id ASC"
   );
   return rows.map((row) => ({
     id: String(row.id),
     label: row.label,
     color: normalizeCategoryColor(row.color),
     sortOrder: row.sort_order,
+    description: row.description ?? "",
   }));
 }
 
@@ -95,12 +98,18 @@ export async function createCategory(data: {
   label: string;
   color: string;
   sortOrder: number;
+  description?: string;
 }): Promise<Category> {
   const { rows } = await query<CategoryRow>(
-    `INSERT INTO wenan_categories (label, color, sort_order)
-     VALUES ($1, $2, $3)
-     RETURNING id, label, color, sort_order`,
-    [data.label, normalizeCategoryColor(data.color), data.sortOrder]
+    `INSERT INTO wenan_categories (label, color, sort_order, description)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id, label, color, sort_order, description`,
+    [
+      data.label,
+      normalizeCategoryColor(data.color),
+      data.sortOrder,
+      data.description ?? "",
+    ]
   );
   const row = rows[0];
   if (!row) throw new Error("创建类目未返回数据");
@@ -109,20 +118,27 @@ export async function createCategory(data: {
     label: row.label,
     color: normalizeCategoryColor(row.color),
     sortOrder: row.sort_order,
+    description: row.description ?? "",
   };
 }
 
 /** 更新类目 */
 export async function updateCategory(
   id: string,
-  data: { label: string; color: string; sortOrder: number }
+  data: { label: string; color: string; sortOrder: number; description?: string }
 ): Promise<Category | null> {
   const { rows, rowCount } = await query<CategoryRow>(
     `UPDATE wenan_categories
-     SET label = $1, color = $2, sort_order = $3
-     WHERE id = $4
-     RETURNING id, label, color, sort_order`,
-    [data.label, normalizeCategoryColor(data.color), data.sortOrder, Number(id)]
+     SET label = $1, color = $2, sort_order = $3, description = $4
+     WHERE id = $5
+     RETURNING id, label, color, sort_order, description`,
+    [
+      data.label,
+      normalizeCategoryColor(data.color),
+      data.sortOrder,
+      data.description ?? "",
+      Number(id),
+    ]
   );
   if ((rowCount ?? 0) === 0) return null;
   const row = rows[0];
@@ -132,6 +148,7 @@ export async function updateCategory(
     label: row.label,
     color: normalizeCategoryColor(row.color),
     sortOrder: row.sort_order,
+    description: row.description ?? "",
   };
 }
 
@@ -299,6 +316,7 @@ export async function getCopyItems(
       c.category_id,
       c.status,
       c.updated_at,
+      c.created_at,
       c.review_reason,
       c.user_id,
       u.nickname AS author_name,
@@ -328,6 +346,8 @@ export async function getCopyItems(
       favorite: row.is_favorite,
       status: row.status,
       updatedAt: formatDate(row.updated_at),
+      // 发布时间：created_at 为空的历史数据视为与 updated_at 相同
+      createdAt: row.created_at ? formatDate(row.created_at) : formatDate(row.updated_at),
       reviewReason: row.review_reason,
       // 投稿人信息：仅用户投稿（user_id 非空）时返回，公共预置文案忽略
       ...(row.user_id
@@ -376,7 +396,7 @@ export async function getCopyItemById(
     `
       SELECT
         c.id, c.title, c.content, c.category_id, c.status, c.updated_at,
-        c.review_reason, c.user_id, u.nickname AS author_name,
+        c.created_at, c.review_reason, c.user_id, u.nickname AS author_name,
         EXISTS (
           SELECT 1 FROM wenan_user_favorites f
           WHERE f.copy_id = c.id AND f.user_id = $1
@@ -397,6 +417,7 @@ export async function getCopyItemById(
     favorite: row.is_favorite,
     status: row.status,
     updatedAt: formatDate(row.updated_at),
+    createdAt: row.created_at ? formatDate(row.created_at) : formatDate(row.updated_at),
     reviewReason: row.review_reason,
     // 投稿人信息：仅用户投稿（user_id 非空）时返回，公共预置文案忽略
     ...(row.user_id
@@ -430,8 +451,8 @@ export async function createCopyItem(
   const createdAt = createdAtRaw ? normalizeDate(createdAtRaw) : null;
   const { rows } = await query<{ id: number }>(
     `INSERT INTO wenan_copy_items
-       (title, content, category_id, user_id, status, updated_at)
-     VALUES ($1, $2, $3, $4, $5, COALESCE($6::date, CURRENT_DATE))
+       (title, content, category_id, user_id, status, updated_at, created_at)
+     VALUES ($1, $2, $3, $4, $5, COALESCE($6::date, CURRENT_DATE), COALESCE($6::date, CURRENT_DATE))
      RETURNING id`,
     [
       data.title,
@@ -661,7 +682,7 @@ export async function bulkInsertCopyItems(
   for (const item of items) {
     const base = params.length + 1;
     valueRows.push(
-      `($${base}, $${base + 1}, $${base + 2}, NULL, 'approved', COALESCE($${base + 3}::date, CURRENT_DATE))`
+      `($${base}, $${base + 1}, $${base + 2}, NULL, 'approved', COALESCE($${base + 3}::date, CURRENT_DATE), COALESCE($${base + 3}::date, CURRENT_DATE))`
     );
     params.push(
       item.title.trim(),

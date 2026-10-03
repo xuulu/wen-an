@@ -11,6 +11,7 @@ import {
   getCategories,
   getCopyItemById,
   getCopyItems,
+  getTopFavorited,
 } from "@/lib/copywriting-data";
 import {
   breadcrumbJsonLd,
@@ -63,7 +64,15 @@ export default async function CopyPage({ params }: CopyPageProps) {
   const { items: sameCategory } = await getCopyItems({
     categoryId: item.categoryId,
   });
-  const related = sameCategory.filter((other) => other.id !== id).slice(0, 8);
+  const related = sameCategory.filter((other) => other.id !== id).slice(0, 6);
+  // 其他分类热门（多层入口：让一篇内容可从多个相关分类/专题进入）
+  const hotItems = (await getTopFavorited(10, true)).filter(
+    (h) => h.id !== id && h.categoryId !== item.categoryId
+  );
+  // 其他分类入口（详情页底部「相关分类」，发现更多分类专题）
+  const relatedCategories = categories
+    .filter((c) => c.id !== item.categoryId)
+    .slice(0, 8);
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -78,7 +87,8 @@ export default async function CopyPage({ params }: CopyPageProps) {
         content: item.content,
         path: `/copy/${id}`,
         siteUrl,
-        date: item.updatedAt,
+        datePublished: item.createdAt ?? item.updatedAt,
+        dateModified: item.updatedAt,
         category: category?.label,
       }),
       breadcrumbJsonLd(
@@ -159,7 +169,15 @@ export default async function CopyPage({ params }: CopyPageProps) {
                   <span className="text-foreground/20">/</span>
                 </>
               )}
-              <span>{item.updatedAt}</span>
+              <time dateTime={item.createdAt ?? item.updatedAt}>
+                发布于 {item.createdAt ?? item.updatedAt}
+              </time>
+              {item.updatedAt !== (item.createdAt ?? item.updatedAt) && (
+                <>
+                  <span className="text-foreground/20">/</span>
+                  <time dateTime={item.updatedAt}>更新于 {item.updatedAt}</time>
+                </>
+              )}
             </div>
 
             <div className="mt-6 whitespace-pre-wrap text-[15px] leading-loose text-foreground/90">
@@ -183,10 +201,10 @@ export default async function CopyPage({ params }: CopyPageProps) {
             </div>
           </article>
 
-          {/* 其他推荐 */}
-          {related.length > 0 && (
+          {/* 相关推荐：同分类优先 + 其他分类热门（多层入口） */}
+          {(related.length > 0 || hotItems.length > 0) && (
             <section className="mt-8">
-              <h2 className="text-sm font-semibold">推荐其他</h2>
+              <h2 className="text-sm font-semibold">相关推荐</h2>
               <ul className="mt-3 grid gap-1 sm:grid-cols-2">
                 {related.map((other) => (
                   <li key={other.id}>
@@ -206,7 +224,46 @@ export default async function CopyPage({ params }: CopyPageProps) {
                     </Link>
                   </li>
                 ))}
+                {hotItems.map((other) => (
+                  <li key={other.id}>
+                    <Link
+                      href={`/copy/${other.id}`}
+                      className="flex min-w-0 items-center gap-2 rounded-lg px-2 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    >
+                      <span
+                        className="size-1.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: other.categoryColor }}
+                      />
+                      <span className="truncate">{other.title}</span>
+                      <span className="ml-auto shrink-0 text-[10px] text-amber-500">
+                        🔥 {other.favCount}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
               </ul>
+            </section>
+          )}
+
+          {/* 相关分类专题入口 */}
+          {relatedCategories.length > 0 && (
+            <section className="mt-8">
+              <h2 className="text-sm font-semibold">浏览其他分类</h2>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {relatedCategories.map((c) => (
+                  <Link
+                    key={c.id}
+                    href={`/category/${c.id}`}
+                    className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs transition-colors hover:bg-accent"
+                  >
+                    <span
+                      className="size-1.5 rounded-full"
+                      style={{ backgroundColor: c.color }}
+                    />
+                    {c.label}
+                  </Link>
+                ))}
+              </div>
             </section>
           )}
         </main>

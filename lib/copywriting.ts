@@ -11,6 +11,8 @@ export interface CopyItem {
   favorite: boolean;
   status: CopyStatus;
   updatedAt: string;
+  /** 首次发布时间（YYYY-MM-DD）；历史数据为 null 时视为与 updatedAt 相同 */
+  createdAt?: string;
   /** 审核拒绝/不确定原因，通过时为空 */
   reviewReason?: string;
   /** 投稿人 id；公共预置文案（无投稿人）时为 undefined */
@@ -32,6 +34,8 @@ export interface Category {
   color: string;
   /** 排序权重（管理后台可调整） */
   sortOrder?: number;
+  /** 分类简介（后台可填写，分类页展示，SEO 使用） */
+  description?: string;
 }
 
 /** 新类目默认配色 */

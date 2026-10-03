@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { LibraryShell } from "@/components/library/library-shell";
 import { MarqueeBanner } from "@/components/library/marquee-banner";
 import { SiteFooter } from "@/components/library/site-footer";
+import { HomeSeoSection } from "@/components/library/home-seo-section";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getCurrentUser } from "@/lib/auth";
 import {
@@ -81,6 +82,15 @@ export default async function Home({
   const settings = await getSiteSettings();
   const marqueeSpeed = Number(settings.marquee_speed_seconds) || 32;
 
+  // 首页 SEO 区块数据：主要分类（按数量倒序，最多 12 个）；热门文案复用 hotItems
+  const seoCategories = categories
+    .map((c) => ({
+      category: c,
+      count: categoryCounts.find((cc) => cc.id === c.id)?.count ?? 0,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 12);
+
   // 首页结构化数据：全站 WebSite + 页面 WebPage + Organization 合并为单 @graph（每页仅一个 ld+json 标签）
   const seoContext = await getSeoContext();
   const { siteUrl } = seoContext;
@@ -116,6 +126,12 @@ export default async function Home({
         enabled={settings.marquee_enabled !== "false"}
         content={settings.marquee_content}
         speedSeconds={marqueeSpeed}
+      />
+      <HomeSeoSection
+        siteName={seoContext.siteName}
+        description={seoContext.settings.seo_description}
+        categories={seoCategories}
+        hotItems={hotItems}
       />
       <LibraryShell
         initialItems={firstPage.items}

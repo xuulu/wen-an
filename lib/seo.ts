@@ -171,24 +171,44 @@ export function breadcrumbJsonLd(
   };
 }
 
-/** 文案详情页 CreativeWork schema */
+/** 文案详情页 CreativeWork schema（datePublished 发布日 / dateModified 最近更新，可相同） */
 export function creativeWorkJsonLd(options: {
   title: string;
   content: string;
   path: string;
   siteUrl: string;
-  date: string;
+  datePublished: string;
+  dateModified?: string;
   category?: string;
 }): Record<string, unknown> {
-  const { title, content, path, siteUrl, date, category } = options;
+  const { title, content, path, siteUrl, datePublished, dateModified, category } =
+    options;
   return {
     "@type": "CreativeWork",
     name: title,
     text: content,
     ...(siteUrl ? { url: `${siteUrl}${path}` } : {}),
-    datePublished: date,
-    dateModified: date,
+    datePublished,
+    dateModified: dateModified || datePublished,
     ...(category ? { articleSection: category } : {}),
+  };
+}
+
+/** FAQ 页 / 分类局部 FAQ schema（FAQPage，mainEntity 问题列表） */
+export function faqPageJsonLd(options: {
+  mainEntity: { question: string; answer: string }[];
+}): Record<string, unknown> {
+  const { mainEntity } = options;
+  return {
+    "@type": "FAQPage",
+    mainEntity: mainEntity.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
   };
 }
 

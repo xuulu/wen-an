@@ -17,10 +17,13 @@ export async function PUT(
     label?: unknown;
     color?: unknown;
     sortOrder?: unknown;
+    description?: unknown;
   } | null;
 
   const label = typeof body?.label === "string" ? body.label.trim() : "";
   const color = typeof body?.color === "string" ? body.color.trim() : "";
+  const description =
+    typeof body?.description === "string" ? body.description.trim() : "";
   const sortOrder =
     typeof body?.sortOrder === "number" ? Math.floor(body.sortOrder) : 0;
 
@@ -34,7 +37,12 @@ export async function PUT(
     );
   }
 
-  const category = await updateCategory(id, { label, color, sortOrder });
+  const category = await updateCategory(id, {
+    label,
+    color,
+    sortOrder,
+    description,
+  });
   if (!category) {
     return NextResponse.json({ error: "类目不存在" }, { status: 404 });
   }

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { CategoryHero, defaultCategoryDescription } from "@/components/library/category-hero";
 import { LibraryShell } from "@/components/library/library-shell";
 import { SiteFooter } from "@/components/library/site-footer";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -17,11 +18,13 @@ import {
 import {
   breadcrumbJsonLd,
   buildSeoMetadata,
+  faqPageJsonLd,
   getSeoContext,
   itemListJsonLd,
   websiteJsonLd,
 } from "@/lib/seo";
 import type { CopyItem } from "@/lib/copywriting";
+import { categoryFaqItems } from "@/components/library/category-hero";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +60,8 @@ export async function generateMetadata({
 
   // 类目名本身可能已含「文案」（如「雷霆文案」），避免拼出「文案文案」
   const heading = categoryHeading(category.label);
-  const description = `${category.label}精选合集，每日更新优质${category.label}模板，一键复制即用。`;
+  const description =
+    category.description?.trim() || defaultCategoryDescription(category.label);
   return buildSeoMetadata({
     title: heading,
     description,
@@ -98,11 +102,26 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const initialRecommended = pickDailyRecommend(categoryItems);
   const heading = categoryHeading(category.label);
 
+  // 分类简介：后台填写优先，空则默认；generateMetadata 同步使用
+  const description =
+    category.description?.trim() || defaultCategoryDescription(category.label);
+
+  // 相关分类：其余分类（按数量倒序，最多 12 个），提供互相发现的内部链接
+  const related = categories
+    .filter((c) => c.id !== id)
+    .map((c) => ({
+      category: c,
+      count: categoryCounts.find((cc) => cc.id === c.id)?.count ?? 0,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 12);
+  const categoryCount = categoryCounts.find((cc) => cc.id === id)?.count ?? 0;
+
   // 对外域名：后台 site_url → SITE_URL env → 空（绝不输出 localhost）
   const seoContext = await getSeoContext();
   const { siteUrl } = seoContext;
 
-  // JSON-LD：全站 WebSite + ItemList（前 20 条）+ 面包屑，合并为单 @graph（每页仅一个 ld+json 标签）
+  // JSON-LD：全站 WebSite + ItemList（前 20 条）+ 面包屑 + 局部 FAQ，合并为单 @graph
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -113,7 +132,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       }),
       itemListJsonLd({
         name: heading,
-        description: `${category.label}精选合集`,
+        description,
         items: categoryItems.slice(0, 20).map((item) => ({
           title: item.title,
           path: `/copy/${item.id}`,
@@ -124,12 +143,19 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         [{ name: "首页", path: "/" }, { name: category.label }],
         siteUrl
       ),
+      faqPageJsonLd({ mainEntity: categoryFaqItems(category.label) }),
     ],
   };
 
   return (
     <>
       <JsonLd data={structuredData} />
+      <CategoryHero
+        category={category}
+        description={description}
+        count={categoryCount}
+        related={related}
+      />
       <LibraryShell
         initialItems={firstPage.items}
         total={firstPage.total}

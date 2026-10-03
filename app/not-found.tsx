@@ -1,19 +1,53 @@
 import Link from "next/link";
-import { Home, Search } from "lucide-react";
+import { headers } from "next/headers";
+import { Flame, Home, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getCategories } from "@/lib/copywriting-data";
+import {
+  getCategories,
+  getCopyItems,
+  getTopFavorited,
+} from "@/lib/copywriting-data";
 import { getCategoryStyle } from "@/lib/copywriting";
 import { getSiteSettings } from "@/lib/site-settings";
 
 /** 品牌化 404：保持 404 状态码（App Router not-found.tsx 自动返回），
- *  提供搜索框 / 热门分类 / 返回首页，降低跳出率。 */
+ *  提供搜索框 / 热门分类 / 热门文案 / 返回首页，降低跳出率。
+ *  Referer 来自分类页时优先推荐该分类（不依赖：为空/被裁剪则回退热门文案）。 */
 export default async function NotFound() {
-  const categories = await getCategories();
+  const [categories, hotItems] = await Promise.all([
+    getCategories(),
+    getTopFavorited(6, true),
+  ]);
   // 品牌文案跟随后台站点配置
   const settings = await getSiteSettings();
   const siteName = settings.site_name || "简心文案库";
+
+  // Referer 定向推荐：仅当来源是站内分类页时使用，其余一律回退热门文案
+  let refererCategoryName: string | null = null;
+  let refererItems: { id: string; title: string }[] = [];
+  try {
+    const referer = (await headers()).get("referer") ?? "";
+    const match = referer.match(/\/category\/(\d+)/);
+    if (match) {
+      const category = categories.find((c) => c.id === match[1]);
+      if (category) {
+        refererCategoryName = category.label;
+        const { items } = await getCopyItems({
+          categoryId: category.id,
+          pagination: { page: 1, pageSize: 4 },
+        });
+        refererItems = items.map((i) => ({ id: i.id, title: i.title }));
+      }
+    }
+  } catch {
+    // headers() 不可用时静默回退热门推荐，不阻塞 404 渲染
+  }
+
+  const recommendTitle = refererCategoryName
+    ? `你来自「${refererCategoryName}」，再看看这些`
+    : "热门文案";
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">
@@ -65,7 +99,7 @@ export default async function NotFound() {
         {categories.length > 0 && (
           <div className="w-full max-w-md">
             <p className="mb-2.5 text-xs font-medium text-muted-foreground">
-              或者看看热门分类
+              猜你想找
             </p>
             <div className="flex flex-wrap gap-2">
               {categories.slice(0, 8).map((category) => {
@@ -85,6 +119,30 @@ export default async function NotFound() {
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* 热门文案 / Referer 定向推荐 */}
+        {(refererItems.length > 0 || hotItems.length > 0) && (
+          <div className="w-full max-w-md">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <Flame className="size-3.5 text-amber-500" />
+              {recommendTitle}
+            </p>
+            <ul className="divide-y rounded-xl border bg-card">
+              {(refererItems.length > 0 ? refererItems : hotItems).map(
+                (item) => (
+                  <li key={item.id}>
+                    <Link
+                      href={`/copy/${item.id}`}
+                      className="block truncate px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    >
+                      {item.title}
+                    </Link>
+                  </li>
+                )
+              )}
+            </ul>
           </div>
         )}
 

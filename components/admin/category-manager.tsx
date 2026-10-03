@@ -19,6 +19,7 @@ interface FormState {
   label: string;
   color: string;
   sortOrder: number;
+  description: string;
 }
 
 const emptyForm: FormState = {
@@ -26,6 +27,7 @@ const emptyForm: FormState = {
   label: "",
   color: DEFAULT_CATEGORY_COLOR,
   sortOrder: 0,
+  description: "",
 };
 
 export function CategoryManager({ categories }: { categories: Category[] }) {
@@ -53,6 +55,7 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
             label: form.label.trim(),
             color: form.color,
             sortOrder: form.sortOrder,
+            description: form.description.trim(),
           }),
         }
       );
@@ -140,6 +143,7 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
                             label: category.label,
                             color: category.color,
                             sortOrder: category.sortOrder ?? 0,
+                            description: category.description ?? "",
                           })
                         }
                       >
@@ -199,6 +203,22 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
               className="w-24"
             />
           </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label htmlFor="category-description" className="text-sm font-medium">
+            类目简介（分类页展示，SEO 收录，可留空用默认简介）
+          </label>
+          <textarea
+            id="category-description"
+            rows={2}
+            value={form.description}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, description: e.target.value }))
+            }
+            placeholder="例如：适合朋友圈发布的生活感悟、心情短句，配图即可用"
+            className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
         </div>
 
         <div className="flex flex-col gap-2">
