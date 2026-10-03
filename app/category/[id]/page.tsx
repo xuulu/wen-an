@@ -12,7 +12,6 @@ import {
   getCategoryCounts,
   getCopyItems,
   getFavoritesCount,
-  getTopFavorited,
 } from "@/lib/copywriting-data";
 import {
   breadcrumbJsonLd,
@@ -22,7 +21,6 @@ import {
   itemListJsonLd,
   websiteJsonLd,
 } from "@/lib/seo";
-import type { CopyItem } from "@/lib/copywriting";
 import { categoryFaqItems } from "@/components/library/category-hero";
 
 export const dynamic = "force-dynamic";
@@ -37,16 +35,6 @@ interface CategoryPageProps {
 /** 分类着陆页标题：类目名已含「文案」时不再追加，避免「文案文案」重复 */
 function categoryHeading(label: string): string {
   return label.endsWith("文案") ? `${label}大全` : `${label}文案大全`;
-}
-
-/** 按日期确定性选择一条推荐文案（同一天固定同一条） */
-function pickDailyRecommend(items: CopyItem[]): CopyItem | null {
-  if (items.length === 0) return null;
-  const dayOfYear = Math.floor(
-    (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) /
-      86400000
-  );
-  return items[dayOfYear % items.length];
 }
 
 export async function generateMetadata({
@@ -83,22 +71,19 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     .split("-")
     .reduce((acc, part) => (acc ^ parseInt(part, 16)) >>> 0, 0);
 
-  const [firstPage, hotItems, categoryCounts, favoritesCount] =
-    await Promise.all([
-      getCopyItems({
-        userId: user?.id ?? 0,
-        categoryId: id,
-        pagination: { page: 1, pageSize: PAGE_SIZE },
-        sort: "random",
-        randomSeed: seed,
-      }),
-      getTopFavorited(5, true),
-      getCategoryCounts(),
-      getFavoritesCount(user?.id ?? 0),
-    ]);
+  const [firstPage, categoryCounts, favoritesCount] = await Promise.all([
+    getCopyItems({
+      userId: user?.id ?? 0,
+      categoryId: id,
+      pagination: { page: 1, pageSize: PAGE_SIZE },
+      sort: "random",
+      randomSeed: seed,
+    }),
+    getCategoryCounts(),
+    getFavoritesCount(user?.id ?? 0),
+  ]);
 
   const categoryItems = firstPage.items;
-  const initialRecommended = pickDailyRecommend(categoryItems);
   const heading = categoryHeading(category.label);
 
   // 分类简介：后台填写优先，空则默认；generateMetadata 同步使用
@@ -146,13 +131,12 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         categories={categories}
         categoryCounts={categoryCounts}
         favoritesCount={favoritesCount}
-        initialRecommended={initialRecommended}
         isLoggedIn={!!user}
         userNickname={user?.nickname ?? ""}
-        hotItems={hotItems}
         initialCategoryId={id}
         randomSeed={seed}
         sortMode="random"
+        showRecommendations={false}
         hero={
           <CategoryHero
             category={category}
