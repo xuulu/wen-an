@@ -49,7 +49,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   // 信息类静态页（FAQ 对 SEO 有价值，收录；法律 / 协议页价值低不进 sitemap，仍可被自然抓取）
-  for (const path of ["/about", "/contact", "/faq"]) {
+  for (const path of ["/about", "/contact", "/faq", "/categories"]) {
     entries.push({
       url: `${siteUrl}${path}`,
       lastModified: now,

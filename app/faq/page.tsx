@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight, HelpCircle } from "lucide-react";
 
-import { SiteFooter } from "@/components/library/site-footer";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getCategories, getCategoryCounts } from "@/lib/copywriting-data";
 import { categoryFaqItems } from "@/components/library/category-hero";
@@ -190,7 +189,6 @@ export default async function FaqPage() {
           )}
         </main>
 
-        <SiteFooter />
       </div>
     </>
   );

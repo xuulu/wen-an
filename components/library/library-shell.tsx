@@ -47,8 +47,6 @@ interface LibraryShellProps {
   /** 当前视图总条数（服务端 COUNT） */
   total: number;
   categories: Category[];
-  /** 各分类已上架数量（服务端聚合） */
-  categoryCounts: { id: string; count: number }[];
   /** 当前用户收藏数（服务端聚合，未登录为 0） */
   favoritesCount: number;
   initialRecommended: CopyItem | null;
@@ -63,8 +61,6 @@ interface LibraryShellProps {
   initialCategoryId?: string;
   /** 初始搜索词（来自 URL ?q=，如 404 页搜索框跳转） */
   initialQuery?: string;
-  /** 页脚（服务端组件，由页面传入） */
-  footer?: React.ReactNode;
   /** 站点名称（后台配置，服务端传入） */
   siteName: string;
 }
@@ -105,7 +101,6 @@ export function LibraryShell({
   initialItems,
   total: initialTotal,
   categories,
-  categoryCounts,
   favoritesCount: initialFavoritesCount,
   initialRecommended,
   isLoggedIn,
@@ -115,7 +110,6 @@ export function LibraryShell({
   sortMode = "random",
   initialCategoryId = "all",
   initialQuery = "",
-  footer,
   siteName,
 }: LibraryShellProps) {
   const router = useRouter();
@@ -213,18 +207,6 @@ export function LibraryShell({
     [categories]
   );
 
-  const sidebarCategories = useMemo(
-    () =>
-      categories.map((category) => ({
-        id: category.id,
-        label: category.label,
-        color: category.color,
-        count:
-          categoryCounts.find((c) => c.id === category.id)?.count ?? 0,
-      })),
-    [categories, categoryCounts]
-  );
-
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
 
@@ -318,7 +300,7 @@ export function LibraryShell({
           activeId={activeId}
           totalCount={total}
           favoriteCount={favoritesCount}
-          categories={sidebarCategories}
+          categoryTotal={categories.length}
           onSelect={handleSelectCategory}
           isLoggedIn={isLoggedIn}
           userNickname={userNickname}
@@ -472,7 +454,6 @@ export function LibraryShell({
         submitDescription="投稿提交后进入待审核，管理员通过后会展示在首页。"
         onSaved={handleItemSaved}
       />
-      {footer}
     </TooltipProvider>
   );
 }

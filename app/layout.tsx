@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { SiteFooter } from "@/components/library/site-footer";
 import { renderCustomHeadTags } from "@/lib/custom-head-tags";
 import {
   getSiteSettings,
@@ -120,6 +121,8 @@ export default async function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider initialTheme={themeName}>{children}</ThemeProvider>
+        {/* 全站页脚：统一在全局布局渲染，各页面不再手动引入（分类导航在此，全站可见利于 SEO） */}
+        <SiteFooter />
       </body>
     </html>
   );

@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { ChevronRight, Library } from "lucide-react";
 
 import { CopyDetailActions } from "@/components/library/copy-detail-actions";
-import { SiteFooter } from "@/components/library/site-footer";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getCurrentUser } from "@/lib/auth";
 import {
@@ -60,15 +59,15 @@ export default async function CopyPage({ params }: CopyPageProps) {
   const seo = await getSeoContext();
   const { siteUrl } = seo;
 
-  // 同分类推荐，同时作为内链入口帮助爬虫发现更多详情页
+  // 同分类推荐 4 条，同时作为内链入口帮助爬虫发现更多详情页
   const { items: sameCategory } = await getCopyItems({
     categoryId: item.categoryId,
   });
-  const related = sameCategory.filter((other) => other.id !== id).slice(0, 6);
-  // 其他分类热门（多层入口：让一篇内容可从多个相关分类/专题进入）
-  const hotItems = (await getTopFavorited(10, true)).filter(
-    (h) => h.id !== id && h.categoryId !== item.categoryId
-  );
+  const related = sameCategory.filter((other) => other.id !== id).slice(0, 4);
+  // 其他分类热门 2 条（多层入口：让一篇内容可从多个相关分类/专题进入，总量控制在 6 个左右）
+  const hotItems = (await getTopFavorited(10, true))
+    .filter((h) => h.id !== id && h.categoryId !== item.categoryId)
+    .slice(0, 2);
   // 其他分类入口（详情页底部「相关分类」，发现更多分类专题）
   const relatedCategories = categories
     .filter((c) => c.id !== item.categoryId)
@@ -271,7 +270,6 @@ export default async function CopyPage({ params }: CopyPageProps) {
           )}
         </main>
 
-        <SiteFooter />
       </div>
     </>
   );

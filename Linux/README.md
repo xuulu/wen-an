@@ -22,7 +22,7 @@ nginx -t && systemctl reload nginx
 
 | 路径 | 类型 | 处理 |
 |---|---|---|
-| `/` 及所有页面路由 | 页面（App Router 动态渲染） | 转发 `127.0.0.1:3000` |
+| `/` 及所有页面路由 | 页面（App Router 动态渲染） | 转发 `127.0.0.1:3000`（含 `/categories` 分类总览页、`/copy/[id]` 详情页、`/category/[id]` 分类页、`/faq` FAQ 页等） |
 | `/_next/static/` | Next.js 构建静态产物 | 转发 + 1 年 immutable 缓存 + CDN-Cache-Control |
 | `/_next/image` | Next.js 内置图片优化 | 转发 + 24h 缓存 + CDN 层识别头 |
 | `/api/*` | 业务 API（含注册/登录/投稿/限流/公告 `GET /api/announcements`、管理端 `GET|POST /api/admin/announcements`、`PUT|DELETE /api/admin/announcements/[id]`） | 转发，透传真实 IP（X-Forwarded-For） |

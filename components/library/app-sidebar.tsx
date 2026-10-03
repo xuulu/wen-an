@@ -1,19 +1,8 @@
 "use client";
 
-import {
-  BookOpen,
-  BookText,
-  ChevronRight,
-  Coffee,
-  Library,
-  MessageCircle,
-  PartyPopper,
-  Plane,
-  Star,
-  Video,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronRight, Layers, Library, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import {
   Sidebar,
@@ -29,30 +18,13 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { getCategoryStyle } from "@/lib/copywriting";
-
-const categoryIcons: Record<string, LucideIcon> = {
-  festival: PartyPopper,
-  moments: MessageCircle,
-  xiaohongshu: BookOpen,
-  video: Video,
-  daily: Coffee,
-  poetry: BookText,
-  travel: Plane,
-};
-
-interface SidebarCategory {
-  id: string;
-  label: string;
-  count: number;
-  color: string;
-}
 
 interface AppSidebarProps {
   activeId: string;
   totalCount: number;
   favoriteCount: number;
-  categories: SidebarCategory[];
+  /** 全部分类数量（/categories 入口徽标） */
+  categoryTotal: number;
   onSelect: (id: string) => void;
   isLoggedIn: boolean;
   userNickname: string;
@@ -63,7 +35,7 @@ export function AppSidebar({
   activeId,
   totalCount,
   favoriteCount,
-  categories,
+  categoryTotal,
   onSelect,
   isLoggedIn,
   userNickname,
@@ -132,27 +104,17 @@ export function AppSidebar({
         <SidebarGroup>
           <SidebarGroupLabel>分类</SidebarGroupLabel>
           <SidebarMenu>
-            {categories.map((category) => {
-              const Icon = categoryIcons[category.id] ?? Library;
-              const style = getCategoryStyle(category.color);
-              return (
-                <SidebarMenuItem key={category.id}>
-                  <SidebarMenuButton
-                    isActive={activeId === category.id}
-                    onClick={() => handleSelect(category.id)}
-                  >
-                    <span
-                      className="flex size-6 items-center justify-center rounded-md"
-                      style={style.iconBg}
-                    >
-                      <Icon className="size-3.5" />
-                    </span>
-                    <span>{category.label}</span>
-                    <SidebarMenuBadge>{category.count}</SidebarMenuBadge>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              );
-            })}
+            <SidebarMenuItem>
+              {/* 全部分类总览页：整页链接（SEO 可抓取），分类详情统一从总览页进入 */}
+              <SidebarMenuButton
+                render={<Link href="/categories" />}
+                isActive={activeId === "categories"}
+              >
+                <Layers />
+                <span>全部分类</span>
+                <SidebarMenuBadge>{categoryTotal}</SidebarMenuBadge>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>

@@ -4,13 +4,10 @@ import type { Metadata } from "next";
 
 import { LibraryShell } from "@/components/library/library-shell";
 import { MarqueeBanner } from "@/components/library/marquee-banner";
-import { SiteFooter } from "@/components/library/site-footer";
-import { HomeSeoSection } from "@/components/library/home-seo-section";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getCurrentUser } from "@/lib/auth";
 import {
   getCategories,
-  getCategoryCounts,
   getCopyItems,
   getFavoritesCount,
   getTopFavorited,
@@ -61,20 +58,18 @@ export default async function Home({
     .split("-")
     .reduce((acc, part) => (acc ^ parseInt(part, 16)) >>> 0, 0);
 
-  const [categories, firstPage, hotItems, categoryCounts, favoritesCount] =
-    await Promise.all([
-      getCategories(),
-      getCopyItems({
-        userId: user?.id ?? 0,
-        pagination: { page: 1, pageSize: HOME_PAGE_SIZE },
-        search: q?.trim() || undefined,
-        sort: "random",
-        randomSeed: seed,
-      }),
-      getTopFavorited(5, true),
-      getCategoryCounts(),
-      getFavoritesCount(user?.id ?? 0),
-    ]);
+  const [categories, firstPage, hotItems, favoritesCount] = await Promise.all([
+    getCategories(),
+    getCopyItems({
+      userId: user?.id ?? 0,
+      pagination: { page: 1, pageSize: HOME_PAGE_SIZE },
+      search: q?.trim() || undefined,
+      sort: "random",
+      randomSeed: seed,
+    }),
+    getTopFavorited(5, true),
+    getFavoritesCount(user?.id ?? 0),
+  ]);
 
   const initialRecommended = pickDailyRecommend(firstPage.items);
 
@@ -82,14 +77,8 @@ export default async function Home({
   const settings = await getSiteSettings();
   const marqueeSpeed = Number(settings.marquee_speed_seconds) || 32;
 
-  // 首页 SEO 区块数据：主要分类（按数量倒序，最多 12 个）；热门文案复用 hotItems
-  const seoCategories = categories
-    .map((c) => ({
-      category: c,
-      count: categoryCounts.find((cc) => cc.id === c.id)?.count ?? 0,
-    }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 12);
+  // 主要分类（最多 12 个）：用于首页 JSON-LD ItemList 声明「网站有哪些分类」
+  const topCategories = categories.slice(0, 12);
 
   // 首页结构化数据：全站 WebSite + 页面 WebPage + Organization 合并为单 @graph（每页仅一个 ld+json 标签）
   const seoContext = await getSeoContext();
@@ -116,6 +105,20 @@ export default async function Home({
           ? { logo: seoContext.settings.site_logo }
           : {}),
       },
+      ...(topCategories.length > 0
+        ? [
+            {
+              "@type": "ItemList",
+              name: "主要分类",
+              itemListElement: topCategories.map((category, i) => ({
+                "@type": "ListItem",
+                position: i + 1,
+                name: category.label,
+                ...(siteUrl ? { url: `${siteUrl}/category/${category.id}` } : {}),
+              })),
+            },
+          ]
+        : []),
     ],
   };
 
@@ -127,16 +130,10 @@ export default async function Home({
         content={settings.marquee_content}
         speedSeconds={marqueeSpeed}
       />
-      <HomeSeoSection
-        siteName={seoContext.siteName}
-        description={seoContext.settings.seo_description}
-        categories={seoCategories}
-      />
       <LibraryShell
         initialItems={firstPage.items}
         total={firstPage.total}
         categories={categories}
-        categoryCounts={categoryCounts}
         favoritesCount={favoritesCount}
         initialRecommended={initialRecommended}
         isLoggedIn={!!user}
@@ -146,8 +143,7 @@ export default async function Home({
         sortMode="random"
         initialQuery={q ?? ""}
         siteName={seoContext.siteName}
-        footer={<SiteFooter />}
-      />
+              />
     </>
   );
 }

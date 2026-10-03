@@ -154,10 +154,6 @@ export default async function NotFound() {
           </Button>
         </div>
       </main>
-
-      <footer className="border-t px-5 py-4 text-center text-xs text-muted-foreground">
-        {settings.footer_about || `${siteName} · 让每一次表达都有灵感`}
-      </footer>
     </div>
   );
 }

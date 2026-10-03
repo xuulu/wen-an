@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 
 import { CategoryHero, defaultCategoryDescription } from "@/components/library/category-hero";
 import { LibraryShell } from "@/components/library/library-shell";
-import { SiteFooter } from "@/components/library/site-footer";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getCurrentUser } from "@/lib/auth";
 import {
@@ -160,7 +159,6 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         initialItems={firstPage.items}
         total={firstPage.total}
         categories={categories}
-        categoryCounts={categoryCounts}
         favoritesCount={favoritesCount}
         initialRecommended={initialRecommended}
         isLoggedIn={!!user}
@@ -170,8 +168,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         randomSeed={seed}
         sortMode="random"
         siteName={seoContext.siteName}
-        footer={<SiteFooter />}
-      />
+              />
     </>
   );
 }
